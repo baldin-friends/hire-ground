@@ -10,6 +10,10 @@
 //   BOARD_PUBLIC_URL=https://….trycloudflare.com npm run board
 // BOARD_QR=/path/to/code.svg adds a QR code of that address to the host view.
 //
+// On a public server: BOARD_HOST_KEY=some-word protects the host buttons (reveal, answer, add, reset). The host then
+// opens the board with &key=some-word in the address. BOARD_BIND=127.0.0.1 keeps the port behind a reverse proxy.
+// The page uses relative addresses, so the board also works under a path such as https://example.org/board/.
+//
 // The host opens a board on the projector, everybody else opens the "Join" address on their own laptop.
 // Boards are the JSON files in board/boards/. State lives in memory: restart the server and the board is empty.
 
@@ -23,6 +27,8 @@ const dir = dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.BOARD_PORT ?? 4321);
 const publicUrl = (process.env.BOARD_PUBLIC_URL ?? '').replace(/\/+$/, '');
 const qrFile = process.env.BOARD_QR && existsSync(process.env.BOARD_QR) ? process.env.BOARD_QR : null;
+const hostKey = process.env.BOARD_HOST_KEY ?? '';
+const bind = process.env.BOARD_BIND ?? '0.0.0.0';
 
 const boards = new Map();
 for (const file of readdirSync(join(dir, 'boards')).filter((f) => f.endsWith('.json')).sort()) {
@@ -71,7 +77,7 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/boards') {
         return send(res, 200, [...boards.values()].map((b) => ({ id: b.id, title: b.title, question: b.question, cards: b.cards.length })));
     }
-    if (req.method === 'GET' && url.pathname === '/info') return send(res, 200, { urls: publicUrl ? [publicUrl, ...lanUrls()] : lanUrls(), port, qr: Boolean(qrFile) });
+    if (req.method === 'GET' && url.pathname === '/info') return send(res, 200, { urls: publicUrl ? [publicUrl, ...lanUrls()] : lanUrls(), port, qr: Boolean(qrFile), needsKey: Boolean(hostKey) });
     if (req.method === 'GET' && url.pathname === '/qr.svg' && qrFile) return send(res, 200, readFileSync(qrFile, 'utf8'), 'image/svg+xml');
 
     if (req.method === 'GET' && url.pathname === '/board') {
@@ -105,6 +111,7 @@ const server = createServer(async (req, res) => {
         const body = await readJson(req);
         const board = boards.get(body.b);
         if (!board) return send(res, 404, { error: 'no such board' });
+        if (hostKey && body.key !== hostKey) return send(res, 403, { error: 'the host key is missing or wrong' });
         const state = stateOf(board.id);
         const total = board.cards.length + state.extra.length;
         if (body.action === 'reveal') state.revealed = Math.min(total, state.revealed + 1);
@@ -122,7 +129,7 @@ const server = createServer(async (req, res) => {
     send(res, 404, { error: 'not found' });
 });
 
-server.listen(port, '0.0.0.0', () => {
+server.listen(port, bind, () => {
     console.log(`\n  Board is running.\n`);
     console.log(`  You (host, projector):   http://localhost:${port}`);
     if (publicUrl) console.log(`  Everybody else (join):   ${publicUrl}   (from anywhere, also from a phone)`);
