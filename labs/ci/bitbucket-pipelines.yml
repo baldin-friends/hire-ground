@@ -1,0 +1,20 @@
+# bitbucket-pipelines.yml · untested template: two parallel shards in the pinned image.
+image: mcr.microsoft.com/playwright:v1.64.1-noble
+
+pipelines:
+  default:
+    - parallel:
+        - step:
+            name: e2e shard 1/2
+            script:
+              - npm ci
+              - npx playwright test --shard=1/2
+            artifacts:
+              - playwright-report/**
+        - step:
+            name: e2e shard 2/2
+            script:
+              - npm ci
+              - npx playwright test --shard=2/2
+            artifacts:
+              - playwright-report/**

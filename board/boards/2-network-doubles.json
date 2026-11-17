@@ -1,0 +1,115 @@
+{
+  "id": "network",
+  "title": "Stub, patch, spy, break, or leave it real?",
+  "question": "Ten situations in a test for Hire Ground. What do you do with the network in each one?",
+  "columns": [
+    {
+      "id": "stub",
+      "label": "Stub",
+      "hint": "answer for the server"
+    },
+    {
+      "id": "patch",
+      "label": "Patch",
+      "hint": "change one thing in the real answer"
+    },
+    {
+      "id": "spy",
+      "label": "Spy",
+      "hint": "listen, change nothing"
+    },
+    {
+      "id": "break",
+      "label": "Break",
+      "hint": "an error on purpose"
+    },
+    {
+      "id": "real",
+      "label": "Leave it real"
+    }
+  ],
+  "cards": [
+    {
+      "id": "1",
+      "text": "The page shows a banner that comes from a job-board partner's server."
+    },
+    {
+      "id": "2",
+      "text": "You need a job whose deadline was yesterday."
+    },
+    {
+      "id": "3",
+      "text": "Does the location filter send its value to the API?"
+    },
+    {
+      "id": "4",
+      "text": "A candidate applies, and the application appears on the recruiter's board."
+    },
+    {
+      "id": "5",
+      "text": "What does the candidate read when the API answers 503?"
+    },
+    {
+      "id": "6",
+      "text": "An analytics script from a third party takes thirty seconds to load."
+    },
+    {
+      "id": "7",
+      "text": "The empty state: no job matches the search."
+    },
+    {
+      "id": "8",
+      "text": "A click on Search sends exactly one request."
+    },
+    {
+      "id": "9",
+      "text": "One job in the list has a salary of 0 €."
+    },
+    {
+      "id": "10",
+      "text": "The search talks to your own API, and the API changed last week."
+    }
+  ],
+  "answer": {
+    "1": {
+      "column": "stub",
+      "why": "You do not own that server. Its outages should not fail your suite."
+    },
+    "2": {
+      "column": "patch",
+      "why": "Everything stays real except the one field you need."
+    },
+    "3": {
+      "column": "spy",
+      "why": "You only want to know what was sent."
+    },
+    "4": {
+      "column": "real",
+      "why": "This is the flow you own. Test it for real, at least once per pipeline."
+    },
+    "5": {
+      "column": "break",
+      "why": "An outage on demand, instead of waiting for the next one."
+    },
+    "6": {
+      "column": "stub",
+      "why": "Third party: answer for it, or abort the request."
+    },
+    "7": {
+      "column": "stub",
+      "why": "An empty list without emptying a database."
+    },
+    "8": {
+      "column": "spy",
+      "why": "Count the requests, change nothing."
+    },
+    "9": {
+      "column": "patch",
+      "why": "A rare value in otherwise real data."
+    },
+    "10": {
+      "column": "real",
+      "why": "A stub would still answer what you told it last month."
+    }
+  }
+}

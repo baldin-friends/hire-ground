@@ -1,0 +1,24 @@
+{
+  "name": "hire-ground-training",
+  "private": true,
+  "version": "2026.11.0",
+  "description": "Playwright training: the Hire Ground course app, the labs and the pair challenges.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "setup": "npm install --prefix app && playwright install chromium firefox webkit",
+    "preflight": "node scripts/preflight.mjs",
+    "app": "npm --prefix app start",
+    "app:bugs": "BUGS=all npm --prefix app start",
+    "reset": "node scripts/reset.mjs",
+    "board": "node board/server.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "1.64.1",
+    "@types/node": "^26.6.5",
+    "playwright-core": "1.64.1"
+  }
+}

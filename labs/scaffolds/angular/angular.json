@@ -1,0 +1,47 @@
+{
+    "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+    "version": 1,
+    "cli": {
+        "packageManager": "npm",
+        "analytics": false
+    },
+    "projects": {
+        "careers": {
+            "projectType": "application",
+            "root": "",
+            "sourceRoot": "src",
+            "prefix": "app",
+            "architect": {
+                "build": {
+                    "builder": "@angular/build:application",
+                    "options": {
+                        "browser": "src/main.ts",
+                        "tsConfig": "tsconfig.json",
+                        "outputPath": { "base": "dist", "browser": "" },
+                        "styles": ["@angular/cdk/overlay-prebuilt.css", "src/styles.css"]
+                    },
+                    "configurations": {
+                        "production": {
+                            "outputHashing": "all",
+                            "extractLicenses": false
+                        },
+                        "development": {
+                            "optimization": false,
+                            "extractLicenses": false,
+                            "sourceMap": true
+                        }
+                    },
+                    "defaultConfiguration": "production"
+                },
+                "serve": {
+                    "builder": "@angular/build:dev-server",
+                    "configurations": {
+                        "production": { "buildTarget": "careers:build:production" },
+                        "development": { "buildTarget": "careers:build:development" }
+                    },
+                    "defaultConfiguration": "development"
+                }
+            }
+        }
+    }
+}

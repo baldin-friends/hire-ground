@@ -1,0 +1,31 @@
+{
+  "name": "hire-ground",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Course app for the Playwright training: a small job board with an applicant pipeline and switchable teaching bugs.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "node server/index.js --dev",
+    "build": "vite build",
+    "prestart": "vite build --logLevel warn",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "multer": "^2.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.4",
+    "vite": "^8.3.4"
+  }
+}

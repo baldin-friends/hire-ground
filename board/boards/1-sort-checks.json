@@ -1,0 +1,140 @@
+{
+  "id": "sort-checks",
+  "title": "Sort twelve checks",
+  "question": "Twelve things somebody wants to know about Hire Ground. Which kind of test answers each one?",
+  "columns": [
+    {
+      "id": "unit",
+      "label": "Unit"
+    },
+    {
+      "id": "component",
+      "label": "Component"
+    },
+    {
+      "id": "api",
+      "label": "API"
+    },
+    {
+      "id": "e2e",
+      "label": "End-to-end"
+    },
+    {
+      "id": "load",
+      "label": "Load"
+    },
+    {
+      "id": "security",
+      "label": "Security"
+    },
+    {
+      "id": "exploratory",
+      "label": "Exploratory",
+      "hint": "a person, by hand"
+    },
+    {
+      "id": "none",
+      "label": "Not worth automating"
+    }
+  ],
+  "cards": [
+    {
+      "id": "1",
+      "text": "The postcode field rejects \"1234\"."
+    },
+    {
+      "id": "2",
+      "text": "A candidate applies with a CV and receives the confirmation mail."
+    },
+    {
+      "id": "3",
+      "text": "formatSalary prints \"62.000–78.000 €\"."
+    },
+    {
+      "id": "4",
+      "text": "GET /api/jobs?location=Dresden returns only Dresden jobs."
+    },
+    {
+      "id": "5",
+      "text": "The career page answers in under 2 s with 500 visitors at once."
+    },
+    {
+      "id": "6",
+      "text": "Changing the id in the URL shows someone else's CV."
+    },
+    {
+      "id": "7",
+      "text": "The location filter lists four cities."
+    },
+    {
+      "id": "8",
+      "text": "A dragged card stays in Screening after a reload."
+    },
+    {
+      "id": "9",
+      "text": "The job ad looks right on the CEO's iPad."
+    },
+    {
+      "id": "10",
+      "text": "The form works with the keyboard only."
+    },
+    {
+      "id": "11",
+      "text": "Someone pastes a 10,000-character cover letter."
+    },
+    {
+      "id": "12",
+      "text": "The footer says © 2026."
+    }
+  ],
+  "answer": {
+    "1": {
+      "column": "unit",
+      "why": "Pure logic. Nobody needs a browser to understand why it failed."
+    },
+    "2": {
+      "column": "e2e",
+      "why": "The value is in the whole flow, across form, server and mail."
+    },
+    "3": {
+      "column": "unit",
+      "why": "A pure function: milliseconds, and a failure points at one line."
+    },
+    "4": {
+      "column": "api",
+      "why": "The filter lives in the API. The UI only shows the result."
+    },
+    "5": {
+      "column": "load",
+      "why": "Playwright is not a load generator."
+    },
+    "6": {
+      "column": "security",
+      "why": "Found by thinking like an attacker; kept afterwards by an API test."
+    },
+    "7": {
+      "column": "component",
+      "why": "One component, quick feedback."
+    },
+    "8": {
+      "column": "e2e",
+      "why": "Drag, save and reload cross the UI, the API and the store."
+    },
+    "9": {
+      "column": "exploratory",
+      "why": "WebKit is not Safari on an iPad: a real device and a person."
+    },
+    "10": {
+      "column": "e2e",
+      "why": "Keyboard paths cross components. Add an accessibility scan."
+    },
+    "11": {
+      "column": "exploratory",
+      "why": "Find it by hand first, then keep the limit in a unit test."
+    },
+    "12": {
+      "column": "none",
+      "why": "Fixing it takes less time than testing it."
+    }
+  }
+}

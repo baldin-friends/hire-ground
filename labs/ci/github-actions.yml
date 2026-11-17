@@ -1,0 +1,65 @@
+# .github/workflows/e2e.yml · four shards, one merged HTML report.
+# Action versions as in the Playwright docs (Oct 2026). Newer majors exist
+# (checkout v7, setup-node v7, upload-artifact v7, download-artifact v8);
+# check your runner version before upgrading.
+name: e2e
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  playwright-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble   # = @playwright/test version
+      options: --user 1001
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    steps:
+      - uses: actions/checkout@v6
+      - run: npm ci
+      - run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} -G @quarantine --fail-on-flaky-tests
+      - uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: blob-report
+          retention-days: 1
+
+  merge-reports:
+    if: ${{ !cancelled() }}
+    needs: [playwright-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+      - run: npm ci
+      - uses: actions/download-artifact@v5
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+      - run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - uses: actions/upload-artifact@v5
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 14
+
+  quarantine:
+    runs-on: ubuntu-latest
+    continue-on-error: true            # reports, never blocks
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v6
+      - run: npm ci
+      - run: npx playwright test -g @quarantine --pass-with-no-tests

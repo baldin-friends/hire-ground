@@ -1,0 +1,4 @@
+# The prebuilt apps are part of the repo: the lab runs without npm install.
+!dist/
+node_modules/
+.angular/

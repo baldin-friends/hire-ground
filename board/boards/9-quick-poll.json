@@ -1,0 +1,20 @@
+{
+  "id": "poll",
+  "title": "Quick poll",
+  "question": "The host adds statements. Where do you stand?",
+  "columns": [
+    {
+      "id": "agree",
+      "label": "Agree"
+    },
+    {
+      "id": "depends",
+      "label": "It depends"
+    },
+    {
+      "id": "disagree",
+      "label": "Disagree"
+    }
+  ],
+  "cards": []
+}
