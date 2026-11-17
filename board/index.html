@@ -39,6 +39,15 @@
     .lobby li { margin: 14px 0; }
     a { color: var(--accent); }
     .hint { padding: 0 24px 16px; margin: 0; font-size: 15px; }
+    .qr { width: 96px; height: 96px; background: #fff; padding: 4px; cursor: zoom-in; vertical-align: middle; margin-left: 14px; }
+    .qr.big { position: fixed; inset: 0; margin: auto; width: min(70vh, 70vw); height: min(70vh, 70vw); padding: 16px; z-index: 10; cursor: zoom-out; box-shadow: 0 0 0 100vmax rgba(0,0,0,.85); }
+    .list { padding: 0 16px 24px; display: grid; gap: 10px; }
+    .list .row { background: var(--tile); padding: 10px 12px; }
+    .list .row p { margin: 0 0 8px; }
+    .list .row b { color: var(--yellow); font-weight: 500; margin-right: 6px; }
+    select { font: inherit; color: var(--fg); background: #000; border: 1px solid var(--line); padding: 8px 10px; width: 100%; }
+    .list .row.sorted select { border-color: var(--accent); }
+    @media (max-width: 760px) { h1 { font-size: 24px; } header { padding: 14px 16px 8px; } .bar { padding: 0 16px 10px; } input { min-width: 0; width: 100%; } }
     @media print {
         body { background: #fff; color: #000; font-size: 15px; }
         header .join, .bar { display: none; }
@@ -65,7 +74,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const get = (path) => fetch(path).then((r) => r.json());
 const post = (path, body) => fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
 
-let board, state, info = { urls: [] }, picked = null, dragging = false, lastVersion = -1;
+let board, state, info = { urls: [] }, picked = null, dragging = false, lastVersion = -1, bigQr = false;
+const narrow = () => !isHost && window.innerWidth < 760;
 let group = isHost ? 'Room' : localStorage.getItem('board-group') || '';
 
 async function lobby() {
@@ -108,8 +118,10 @@ function render() {
             <span>${group ? 'Drag a card into a box, or click a card and then a box.' : 'Type a group name first.'}</span></div>`;
 
     app.innerHTML = `<header><h1>${esc(board.title)}</h1><p>${esc(board.question)}</p>
-            ${isHost ? `<p class="join">Join: <b>${esc(info.urls[0] ?? location.origin)}</b></p>` : ''}</header>
+            ${isHost ? `<p class="join">Join: <b>${esc(info.urls[0] ?? location.origin)}</b>${info.qr ? `<img class="qr${bigQr ? ' big' : ''}" src="/qr.svg" alt="QR code of the join address" title="Click to enlarge">` : ''}</p>` : ''}</header>
         ${isHost ? hostBar : joinBar}
+        ${narrow() ? `<div class="list">${cards.map((c) => `<div class="row${mine[c.id] ? ' sorted' : ''}"><p><b>${esc(c.id.replace(/^x/, '+'))}</b>${esc(c.text)}</p>
+            <select data-pick="${esc(c.id)}" aria-label="Box for card ${esc(c.id)}"${group ? '' : ' disabled'}><option value="">not sorted yet</option>${board.columns.map((col) => `<option value="${esc(col.id)}"${mine[c.id] === col.id ? ' selected' : ''}>${esc(col.label)}</option>`).join('')}</select></div>`).join('') || `<p>The cards appear here when the host reveals them.</p>`}</div>` : `
         <div class="tray" data-column="">${inTray.map((c) => cardHtml(c, [])).join('') || `<span>${state.revealed === 0 ? (isHost ? 'Press “Reveal next card” to show the first card.' : 'The cards appear here when the host reveals them.') : 'All cards are placed.'}</span>`}</div>
         <div class="cols" style="--n:${board.columns.length}">${board.columns.map((col) => {
             const here = cards.filter((c) => placedBy(c, col.id).length);
@@ -117,7 +129,7 @@ function render() {
             return `<section class="col" data-column="${esc(col.id)}" aria-label="${esc(col.label)}"><h2>${esc(col.label)}${col.hint ? `<small>${esc(col.hint)}</small>` : ''}</h2>
                 ${here.map((c) => cardHtml(c, placedBy(c, col.id))).join('')}
                 ${answers.length ? `<div class="answer">${answers.map((c) => `<p><b>${esc(c.id)}</b>${esc(board.answer[c.id].why)}</p>`).join('')}</div>` : ''}</section>`;
-        }).join('')}</div>`;
+        }).join('')}</div>`}`;
 }
 
 async function place(cardId, column) {
@@ -134,6 +146,10 @@ app.addEventListener('click', async (e) => {
         if (act === 'reset' && !confirm('Empty the board for everybody?')) return;
         state = await post('/host', { b: boardId, action: act });
         lastVersion = state.version;
+        return render();
+    }
+    if (e.target.closest('.qr')) {
+        bigQr = !bigQr;
         return render();
     }
     const card = e.target.closest('.card');
@@ -155,6 +171,7 @@ app.addEventListener('keydown', async (e) => {
     if (e.target.classList?.contains('card')) e.target.click();
 });
 app.addEventListener('change', (e) => {
+    if (e.target.dataset?.pick) return place(e.target.dataset.pick, e.target.value);
     if (e.target.id !== 'group') return;
     group = e.target.value.replace(/\s+/g, ' ').trim().slice(0, 24);
     localStorage.setItem('board-group', group);
@@ -186,7 +203,7 @@ app.addEventListener('drop', (e) => {
 async function poll() {
     try {
         const next = await get(`/state?b=${boardId}`);
-        const typing = ['new', 'group'].includes(document.activeElement?.id);
+        const typing = ['new', 'group'].includes(document.activeElement?.id) || document.activeElement?.tagName === 'SELECT';
         if (next.version !== lastVersion && !dragging && !typing) {
             state = next;
             lastVersion = next.version;
@@ -211,6 +228,8 @@ function printView() {
     lastVersion = state.version;
     render();
     poll();
+    let wasNarrow = narrow();
+    window.addEventListener('resize', () => { if (narrow() !== wasNarrow) { wasNarrow = narrow(); render(); } });
 })();
 </script>
 </body>

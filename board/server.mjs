@@ -4,17 +4,25 @@
 //   npm run board                 → http://localhost:4321
 //   BOARD_PORT=5000 npm run board
 //
+// People who are not in your network can join through a tunnel, for example
+//   cloudflared tunnel --url http://localhost:4321
+// Start the board with the address the tunnel prints, and it shows that address as "Join":
+//   BOARD_PUBLIC_URL=https://….trycloudflare.com npm run board
+// BOARD_QR=/path/to/code.svg adds a QR code of that address to the host view.
+//
 // The host opens a board on the projector, everybody else opens the "Join" address on their own laptop.
 // Boards are the JSON files in board/boards/. State lives in memory: restart the server and the board is empty.
 
 import { createServer } from 'node:http';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.BOARD_PORT ?? 4321);
+const publicUrl = (process.env.BOARD_PUBLIC_URL ?? '').replace(/\/+$/, '');
+const qrFile = process.env.BOARD_QR && existsSync(process.env.BOARD_QR) ? process.env.BOARD_QR : null;
 
 const boards = new Map();
 for (const file of readdirSync(join(dir, 'boards')).filter((f) => f.endsWith('.json')).sort()) {
@@ -63,7 +71,8 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/boards') {
         return send(res, 200, [...boards.values()].map((b) => ({ id: b.id, title: b.title, question: b.question, cards: b.cards.length })));
     }
-    if (req.method === 'GET' && url.pathname === '/info') return send(res, 200, { urls: lanUrls(), port });
+    if (req.method === 'GET' && url.pathname === '/info') return send(res, 200, { urls: publicUrl ? [publicUrl, ...lanUrls()] : lanUrls(), port, qr: Boolean(qrFile) });
+    if (req.method === 'GET' && url.pathname === '/qr.svg' && qrFile) return send(res, 200, readFileSync(qrFile, 'utf8'), 'image/svg+xml');
 
     if (req.method === 'GET' && url.pathname === '/board') {
         const board = boards.get(id);
@@ -116,7 +125,8 @@ const server = createServer(async (req, res) => {
 server.listen(port, '0.0.0.0', () => {
     console.log(`\n  Board is running.\n`);
     console.log(`  You (host, projector):   http://localhost:${port}`);
-    for (const u of lanUrls()) console.log(`  Everybody else (join):   ${u}`);
+    if (publicUrl) console.log(`  Everybody else (join):   ${publicUrl}   (from anywhere, also from a phone)`);
+    for (const u of lanUrls()) console.log(`  Everybody else (join):   ${u}${publicUrl ? '   (same network only)' : ''}`);
     console.log(`\n  Boards: ${[...boards.keys()].join(', ')}`);
     console.log(`  Nobody can reach your laptop? Each group runs "npm run board" itself and opens http://localhost:${port}\n`);
 });
