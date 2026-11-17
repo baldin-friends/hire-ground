@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Lab 10 without a CI system: two shards on your laptop, one merged report.
+# Step 6: two shards on your laptop, one merged report. No CI system needed.
 # The same blob reports, the same merge. Only the machines are missing.
 set -u
 rm -rf ../../all-blob-reports && mkdir -p ../../all-blob-reports

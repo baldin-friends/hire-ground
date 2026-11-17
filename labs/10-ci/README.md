@@ -1,15 +1,15 @@
-# Lab 10 · Ship the suite to the pipeline
+# Steps 6 and 7 · Ship the suite to the pipeline
 
 The suite moves to the pipeline: four shards, one report, and a trace when a test fails.
 
-**Time** 50 min · alone or in pairs
+**Time** step 6: 12 min, alone · step 7: 25 min, alone or in pairs
 
 ## Start here
 
 `labs/10-ci`: the finished suite, a workflow template `e2e.yml` for GitHub Actions with three TODOs, and `shard-locally.sh`.
-Pick a path. Both end with the same merged report.
+Step 6 runs on your laptop and needs no pipeline. Step 7 does the same in GitHub Actions. Both end with the same merged report.
 
-## Path A · GitHub Actions
+## Step 7 · GitHub Actions
 
 1. Get your own copy of this repository on GitHub: fork it, or create an empty repository and push your clone to it.
 2. `playwright.config.ts`: on CI, report with `blob` and `github` (the TODO).
@@ -17,7 +17,7 @@ Pick a path. Both end with the same merged report.
 4. Break one test on purpose (expect 13 jobs in `tests/jobs.spec.ts`), commit, push, and open the Actions tab.
 5. Download the artefact `html-report`, unzip it, and open it: `npx playwright show-report <folder>`.
 
-## Path B · no CI access: shard on your laptop
+## Step 6 · Shard on your laptop
 
 1. Break one test on purpose (expect 13 jobs in `tests/jobs.spec.ts`).
 2. Read `shard-locally.sh`, then run it: `./shard-locally.sh`. Two shards, two blob reports, one merge.

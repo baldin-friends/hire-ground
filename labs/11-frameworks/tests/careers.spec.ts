@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// Lab 11 · one spec for three apps. The baseURL comes from the project,
+// Steps 8 and 9 · one spec for three apps. The baseURL comes from the project,
 // so page.goto('/') opens the React, the Angular or the Vue app.
 
 test('the career page lists the open positions', async ({ page }) => {

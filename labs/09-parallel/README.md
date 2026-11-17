@@ -1,13 +1,12 @@
-# Lab 9 · Faster, and still true
+# Steps 1 to 4 · Faster, and still true
 
 The suite takes too long. Make it faster, and keep it correct.
 
-**Time** 45 min · alone
+**Time** four short steps · alone
 
-## Warm-up, before the lab · pairs · 10 min
+## Step 1 · Measure
 
-`labs/09-parallel` holds the suite of Days 1 and 2. Measure it with one worker. Then make it faster, without a single failure in three runs.
-Write down what broke on the way, and why.
+`labs/09-parallel` holds the suite of Days 1 and 2. Measure it with one worker, then with four. Note both times, and what failed.
 
 ```bash
 cd labs/09-parallel
@@ -15,12 +14,11 @@ npx playwright test --workers=1      # the starting point; the run time is on th
 npx playwright test --workers=4      # and then?
 ```
 
-## Steps
+## Steps 2 to 4
 
-1. Measure with `--workers=1` and `--workers=4`; note both times.
-2. Run `npx playwright test --workers=4 --shuffle --repeat-each=3`. Which tests fail, and what do they share?
-3. `tests/applications.spec.ts`: fix it with data per test.
-4. `tests/settings.spec.ts` loses a race only now and then. Make it show: `npx playwright test settings --workers=4 --repeat-each=10`, several times. Then put a lock on the three tests.
+1. **Step 2:** run `npx playwright test --workers=4 --shuffle --repeat-each=3`. Which tests fail, and what do they share?
+2. **Step 3:** `tests/applications.spec.ts`: fix it with data per test. Check: `npx playwright test applications --workers=4 --repeat-each=5`.
+3. **Step 4:** `tests/settings.spec.ts` loses a race only now and then. Make it show: `npx playwright test settings --workers=4 --repeat-each=10`, several times. Then put a lock on the three tests.
 
 ## Done when
 

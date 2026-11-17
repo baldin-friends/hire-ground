@@ -47,10 +47,10 @@ npm run app
 | 2 | steps 10–12 | `labs/07-reuse` | one login for all tests, a page object, a fixture |
 | 2 | steps 14–15 | `labs/08-time` | thirty minutes in seconds; a mail that arrives late |
 | 2 | PC2 | `labs/pc2` | pair challenge: six failed CI runs, solved from the evidence |
-| 3 | 9 | `labs/09-parallel` | the suite with four workers, shuffled, still green |
-| 3 | 10 | `labs/10-ci` | four shards, one merged report |
-| 3 | 11 | `labs/11-frameworks` | one test for React, Angular and Vue |
-| 3 | Try | `labs/12-accessibility` | an accessibility scan, and the fix |
+| 3 | steps 1–4 | `labs/09-parallel` | the suite with four workers, shuffled, still green |
+| 3 | steps 6–7 | `labs/10-ci` | shards and one merged report, on your laptop and in a pipeline |
+| 3 | steps 8–9 | `labs/11-frameworks` | one test for React, Angular and Vue |
+| 3 | step 10 | `labs/12-accessibility` | an accessibility scan, and the fix |
 | 3 | PC3 | `labs/pc3` | pair challenge: the flaky hunt |
 
 Every lab starts from a working state. If one lab did not go well, the next one is not affected.

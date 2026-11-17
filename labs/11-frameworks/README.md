@@ -1,8 +1,8 @@
-# Lab 11 · One test, three frontends
+# Steps 8 and 9 · One test, three frontends
 
 The same list, built in React, Angular and Vue. One test for all three.
 
-**Time** 25 min · alone
+**Time** step 8: 12 min · step 9: 10 min · alone
 
 ## Start here
 
@@ -38,13 +38,13 @@ Run all commands in `labs/11-frameworks/`.
    node ../scaffolds/serve.mjs vue 4303
    ```
 
-2. Write one spec in `tests/careers.spec.ts`: the heading is visible, the Apply link works. Run it against React first:
+2. **Step 8:** write one spec in `tests/careers.spec.ts`: the heading is visible, the Apply link works. Run it against React first:
 
    ```bash
    npx playwright test --project=react
    ```
 
-3. Run it as three projects, each with its own `webServer`. Add the projects `angular` and `vue` and their two servers to `playwright.config.ts`, then run:
+3. **Step 9:** run it as three projects, each with its own `webServer`. Add the projects `angular` and `vue` and their two servers to `playwright.config.ts`, then run:
 
    ```bash
    npx playwright test --project=react --project=angular --project=vue

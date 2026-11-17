@@ -44,7 +44,7 @@ The file `playwright/.auth/recruiter.json` does not exist yet. The setup project
 <details>
 <summary>Hint 2 · the page object</summary>
 
-The lines are the ones from Lab 4, with `this.page` instead of `page`:
+The lines are the ones from the form step on Day 1, with `this.page` instead of `page`:
 ```ts
 async open(slug: string) {
     await this.page.goto(`/jobs/${slug}`);

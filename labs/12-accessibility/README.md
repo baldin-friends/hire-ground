@@ -1,4 +1,4 @@
-# Try · Before the career fair: one accessibility scan
+# Step 10 · One accessibility scan of the job page
 
 The job page should work with a screen reader. An accessibility scan shows how far it is from that.
 

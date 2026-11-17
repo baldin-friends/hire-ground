@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// Lab 11 · one spec, three projects. The baseURL comes from the project,
+// Steps 8 and 9 · one spec, three projects. The baseURL comes from the project,
 // so no line in this file knows which framework it tests.
 
 test('the career page lists the open positions', async ({ page }) => {
