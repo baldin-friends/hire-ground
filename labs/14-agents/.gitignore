@@ -1,0 +1,6 @@
+# what `npx playwright init-agents` and `init-skills` write into this folder
+.claude/
+.mcp.json
+.github/
+.vscode/
+.playwright-cli/

@@ -27,6 +27,8 @@ export function RecruiterLayout() {
                 <NavLink end to="/recruiter">
                     Pipeline
                 </NavLink>
+                <NavLink to="/recruiter/candidates">Candidates</NavLink>
+                <NavLink to="/recruiter/jobs">Jobs</NavLink>
                 <NavLink to="/recruiter/settings">Settings</NavLink>
                 <span className="spacer" />
                 <span className="user">Signed in as {user!.name}</span>

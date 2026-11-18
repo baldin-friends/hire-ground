@@ -1,18 +1,18 @@
 {
   "name": "hire-ground",
   "private": true,
-  "version": "0.1.0",
-  "description": "Course app for the Playwright training: a small job board with an applicant pipeline and switchable teaching bugs.",
+  "version": "0.2.0",
+  "description": "Course app for the Playwright training: a job board with a recruiter workspace, on a SQLite database.",
   "type": "module",
   "license": "MIT",
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.13"
   },
   "scripts": {
-    "dev": "node server/index.js --dev",
+    "dev": "node server/check-node.js && node --disable-warning=ExperimentalWarning server/index.js --dev",
     "build": "vite build",
     "prestart": "vite build --logLevel warn",
-    "start": "node server/index.js"
+    "start": "node server/check-node.js && node --disable-warning=ExperimentalWarning server/index.js"
   },
   "dependencies": {
     "express": "^5.3.0",

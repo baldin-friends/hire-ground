@@ -1,0 +1,65 @@
+# The pipeline of this repository: the suite of case 8 (solutions/12-ci) in three shards, one merged HTML report.
+# A pull request runs the gate: the tests tagged @smoke. A push to main and a manual start run everything.
+# The lab sheet explains every line: labs/12-ci/README.md
+# https://playwright.dev/docs/test-sharding#github-actions-example · https://playwright.dev/docs/ci
+name: e2e
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  # The gate stays fast because it runs a selection, not because the machines are faster.
+  SELECTION: ${{ github.event_name == 'pull_request' && '--grep @smoke' || '' }}
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble   # = the @playwright/test version in package.json
+      options: --user 1001
+    strategy:
+      fail-fast: false                                    # a red shard does not cancel the others
+      matrix:
+        shardIndex: [1, 2, 3]
+        shardTotal: [3]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm ci                                       # Playwright, as pinned in package-lock.json
+      - run: npm ci --prefix app                          # the application under test
+      - name: Run shard ${{ matrix.shardIndex }} of ${{ matrix.shardTotal }}
+        working-directory: solutions/12-ci
+        run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} $SELECTION
+      - uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() }}                           # also when tests failed: that is the report you need
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: solutions/12-ci/blob-report
+          retention-days: 1
+
+  merge-reports:
+    if: ${{ !cancelled() }}                               # also when a shard was red
+    needs: [tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm ci
+      - uses: actions/download-artifact@v5
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+      - run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - uses: actions/upload-artifact@v5
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 14

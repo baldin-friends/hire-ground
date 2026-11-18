@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, STAGES, type Application, type Stage } from '../api';
-import { formatBytes, formatDate, formatDateTime } from '../format';
+import { Rating } from '../components/Rating';
+import { formatBytes, formatDate, formatDateTime, formatLocalDateTime, localTimeZone } from '../format';
 
 export function Candidate() {
     const { id = '' } = useParams();
@@ -9,6 +10,7 @@ export function Candidate() {
     const [missing, setMissing] = useState(false);
     const [note, setNote] = useState('');
     const [status, setStatus] = useState('');
+    const [interviewAt, setInterviewAt] = useState('');
 
     useEffect(() => {
         api.application(id)
@@ -51,6 +53,10 @@ export function Candidate() {
                 <dd>{a.startDate ? formatDate(a.startDate) : '–'}</dd>
                 <dt>Salary expectation</dt>
                 <dd>{a.salaryExpectation != null ? `${new Intl.NumberFormat('de-DE').format(a.salaryExpectation)} €` : '–'}</dd>
+                <dt>Rating</dt>
+                <dd>
+                    <Rating value={a.rating} onChange={async (rating) => setA(await api.updateApplication(a.id, { rating }))} />
+                </dd>
             </dl>
 
             <div className="field inline">
@@ -87,6 +93,36 @@ export function Candidate() {
                     <p className="pre">{a.coverLetter}</p>
                 </>
             )}
+
+            <h2>Interview</h2>
+            {a.interviewAt ? (
+                <p data-qa="interview-time">
+                    {/* an instant, shown in the time zone of this browser */}
+                    <time dateTime={a.interviewAt}>{formatLocalDateTime(a.interviewAt)}</time>{' '}
+                    <span className="hint">({localTimeZone()})</span>
+                </p>
+            ) : (
+                <p className="empty">No interview yet.</p>
+            )}
+            <form
+                className="inline-form"
+                onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!interviewAt) return;
+                    // the field holds a local time; the server gets the instant
+                    setA(await api.scheduleInterview(a.id, new Date(interviewAt).toISOString()));
+                    setInterviewAt('');
+                    setStatus('Interview scheduled.');
+                }}
+            >
+                <div className="field">
+                    <label htmlFor="interview-at">Date and time</label>
+                    <input id="interview-at" type="datetime-local" value={interviewAt} onChange={(e) => setInterviewAt(e.target.value)} />
+                </div>
+                <button type="submit" className="button">
+                    Schedule interview
+                </button>
+            </form>
 
             <h2>Notes</h2>
             {a.notes.length ? (

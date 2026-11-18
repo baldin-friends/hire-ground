@@ -7,3 +7,5 @@ all-blob-reports/
 playwright/.auth/
 .DS_Store
 .playwright-cli/
+# the database of Hire Ground: created at the first start, restored by npm run reset
+app/data/

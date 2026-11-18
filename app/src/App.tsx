@@ -1,9 +1,14 @@
 import { Link, Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import { Analytics } from './components/Analytics';
 import { CookieBanner } from './components/CookieBanner';
+import { IconSprite } from './components/Icon';
+import { ToastProvider } from './components/Toasts';
 import { Applied } from './pages/Applied';
 import { Apply } from './pages/Apply';
 import { Candidate } from './pages/Candidate';
+import { Candidates } from './pages/Candidates';
+import { JobForm } from './pages/JobForm';
+import { JobsAdmin } from './pages/JobsAdmin';
 import { JobDetail } from './pages/JobDetail';
 import { Jobs } from './pages/Jobs';
 import { Login } from './pages/Login';
@@ -11,10 +16,11 @@ import { Mailbox } from './pages/Mailbox';
 import { Pipeline } from './pages/Pipeline';
 import { RecruiterLayout } from './pages/RecruiterLayout';
 import { Settings } from './pages/Settings';
+import { Status } from './pages/Status';
 
 export function App() {
     return (
-        <>
+        <ToastProvider>
             <a className="skip-link" href="#main">
                 Skip to content
             </a>
@@ -40,10 +46,14 @@ export function App() {
                     <Route path="/jobs/:slug" element={<JobDetail />} />
                     <Route path="/jobs/:slug/apply" element={<Apply />} />
                     <Route path="/applied/:reference" element={<Applied />} />
+                    <Route path="/status/:reference" element={<Status />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/recruiter" element={<RecruiterLayout />}>
                         <Route index element={<Pipeline />} />
+                        <Route path="candidates" element={<Candidates />} />
                         <Route path="applications/:id" element={<Candidate />} />
+                        <Route path="jobs" element={<JobsAdmin />} />
+                        <Route path="jobs/new" element={<JobForm />} />
                         <Route path="settings" element={<Settings />} />
                     </Route>
                     <Route path="/mailbox" element={<Mailbox />} />
@@ -55,7 +65,8 @@ export function App() {
             </footer>
             <CookieBanner />
             <Analytics />
-        </>
+            <IconSprite />
+        </ToastProvider>
     );
 }
 

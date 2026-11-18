@@ -15,8 +15,8 @@ console.log('\nPlaywright training · pre-flight check\n');
 
 // Node.js
 const [major, minor] = process.versions.node.split('.').map(Number);
-if (major > 22 || (major === 22 && minor >= 12)) ok(`Node.js ${process.versions.node}`);
-else bad(`Node.js ${process.versions.node} is too old`, 'Install Node.js 22.12 or later (https://nodejs.org).');
+if (major > 22 || (major === 22 && minor >= 13)) ok(`Node.js ${process.versions.node}`);
+else bad(`Node.js ${process.versions.node} is too old`, 'Install Node.js 22.13 or later (https://nodejs.org): the app keeps its data in SQLite through node:sqlite.');
 
 // git
 try { ok(execSync('git --version', { encoding: 'utf8' }).trim()); }

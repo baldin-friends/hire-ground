@@ -7,7 +7,7 @@ The app runs on your laptop, and Playwright is installed in the pinned version.
 ## Steps
 
 ```bash
-node --version          # 22.12 or later
+node --version          # 22.13 or later
 git clone https://github.com/baldin-friends/hire-ground.git
 cd hire-ground
 npm install             # Playwright 1.64.1, pinned

@@ -8,9 +8,29 @@ export type Job = {
     salaryMin: number;
     salaryMax: number;
     deadline: string;
+    status: 'draft' | 'published';
     summary: string;
     description: string[];
     requirements: string[];
+    skills: string[];
+    /** only in the recruiter's list */
+    applications?: number;
+};
+
+export const TEAMS = ['Engineering', 'People', 'Product', 'QA', 'Sales'];
+export const LOCATIONS = ['Berlin', 'Dresden', 'Hamburg', 'München'];
+
+export type NewJob = {
+    title: string;
+    team: string;
+    location: string;
+    remote: boolean;
+    salaryMin: number;
+    salaryMax: number;
+    deadline: string;
+    description: string;
+    skills: string[];
+    status: 'draft' | 'published';
 };
 
 export type Stage = 'new' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected';
@@ -38,9 +58,18 @@ export type Application = {
     coverLetter: string;
     cv: { name: string; type: string; size: number };
     stage: Stage;
+    /** 0 = not rated */
+    rating: number;
+    shortlisted: boolean;
+    /** an instant in UTC, or null */
+    interviewAt: string | null;
     notes: { id: string; text: string; author: string; createdAt: string }[];
     createdAt: string;
 };
+
+export type CandidatePage = { items: Application[]; total: number; page: number; pageSize: number; pages: number };
+
+export type ApplicationStatus = { reference: string; firstName: string; jobTitle: string; stage: Stage; interviewAt: string | null };
 
 export type User = { email: string; name: string; role: 'recruiter' | 'admin' };
 
@@ -76,6 +105,15 @@ export const api = {
     applications: () => request<Application[]>('/api/applications'),
     application: (id: string) => request<Application>(`/api/applications/${id}`),
     moveApplication: (id: string, stage: Stage) => request<Application>(`/api/applications/${id}`, json('PATCH', { stage })),
+    updateApplication: (id: string, patch: Partial<Pick<Application, 'stage' | 'rating' | 'shortlisted'>>) =>
+        request<Application>(`/api/applications/${id}`, json('PATCH', patch)),
+    scheduleInterview: (id: string, startsAt: string) => request<Application>(`/api/applications/${id}/interview`, json('PUT', { startsAt })),
+    candidates: (params: URLSearchParams) => request<CandidatePage>(`/api/candidates?${params}`),
+    status: (reference: string) => request<ApplicationStatus>(`/api/status/${encodeURIComponent(reference)}`),
+    adminJobs: () => request<Job[]>('/api/admin/jobs'),
+    createJob: (job: NewJob) => request<Job>('/api/jobs', json('POST', job)),
+    setJobStatus: (id: string, status: Job['status']) => request<Job>(`/api/jobs/${id}`, json('PATCH', { status })),
+    deleteJob: (id: string) => request<null>(`/api/jobs/${id}`, { method: 'DELETE' }),
     addNote: (id: string, text: string) => request<Application>(`/api/applications/${id}/notes`, json('POST', { text })),
     login: (email: string, password: string) => request<User>('/api/auth/login', json('POST', { email, password })),
     logout: () => request<null>('/api/auth/logout', { method: 'POST' }),

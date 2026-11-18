@@ -16,6 +16,9 @@ export function Applied() {
             </p>
             <p>{state?.email ? `We have sent a confirmation to ${state.email}.` : 'We have sent you a confirmation by email.'}</p>
             <p>
+                <Link to={`/status/${reference}`}>Status of your application</Link>
+            </p>
+            <p>
                 <Link to="/jobs">Back to all jobs</Link>
             </p>
         </section>
