@@ -25,8 +25,8 @@ jobs:
         shardIndex: [1, 2, 3]
         shardTotal: [3]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm ci                                       # Playwright, as pinned in package-lock.json
@@ -34,7 +34,7 @@ jobs:
       - name: Run shard ${{ matrix.shardIndex }} of ${{ matrix.shardTotal }}
         working-directory: labs/12-ci
         run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: labs/12-ci/blob-report
@@ -44,18 +44,18 @@ jobs:
     needs: [tests]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm ci
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
       - run: npx playwright merge-reports --reporter html ./all-blob-reports
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report
