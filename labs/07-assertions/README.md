@@ -34,11 +34,13 @@ confirms it, that the candidate gets a mail, and that the table shows the new st
 `await expect(row).toHaveStage('Interview')`.
 
 1. Run it. Why is `isVisible()` false although the message is on the screenshot? Replace it.
-2. The mail: `mails[0]` is undefined. The mail leaves one to two seconds after the request. Ask until it is there: `expect.poll`.
-3. Delete both `waitForTimeout` lines. What waits instead?
-4. `expect.ts`: write the matcher `toHaveStage`. Then use it in the test.
-5. Make the matcher fail once on purpose (`'Offer'`) and read its message.
-6. The date `2026-11-26T10:00` expires. Compute tomorrow.
+2. Run it again: `mails[0]` is undefined. The mail leaves one to two seconds after the request. Ask until it is
+   there: `expect.poll`. Now the test is green, and four seconds of it are sleep.
+3. Delete both `waitForTimeout` lines. The test stays green: what waits instead?
+4. `expect.ts`: write the matcher `toHaveStage`. Then use it in the test, instead of the two lines with `textContent()`.
+5. Make the matcher fail once on purpose (`'Offer'`), read its message, and change it back.
+
+Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
 
 ## Hints
 
@@ -68,7 +70,8 @@ await expect
 <summary>Hint 3 · no sleep</summary>
 
 `click()` waits until the link "Luis Hartmann" exists and is the only one, which is true after the search has answered.
-`expect(locator).toHaveText()` waits until the text is there. Nothing else is needed.
+`textContent()` waits until the row exists, then reads once. The stage is saved by then, so the test passes.
+Step 4 replaces it with an assertion that waits for the text itself.
 
 </details>
 
@@ -96,7 +99,10 @@ The rest (message and return value) is in `solutions/07-assertions/expect.ts`.
 
 ## Done early?
 
-Write `toHaveMail` with `expect.poll` inside: `await expect(request).toHaveMail('luis.hartmann@example.com', 'Invitation …')`.
+- The date `2026-11-26T10:00` is fixed. A year from now the test schedules an interview in the past. Compute tomorrow.
+- Write `toHaveMail` with `expect.poll` inside: `await expect(request).toHaveMail('luis.hartmann@example.com', 'Invitation …')`.
+
+The solution has both.
 
 ## Timeouts, in one table
 

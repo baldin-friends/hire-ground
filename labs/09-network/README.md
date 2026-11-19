@@ -10,6 +10,8 @@ cd labs/09-network
 npx playwright test          # once, in a terminal: signs in and saves the session
 ```
 
+The warm-up passes and the four tests of the challenge fail (`4 failed, 2 passed`): that is the starting point.
+
 The fixtures `job` and `applicant` are the ones from Case 4. They live in `support/fixtures.ts`, and every case from here on imports them from there.
 
 ## Four things a test can do with a request
@@ -29,16 +31,25 @@ that real data does not give you.
 `tests/1-warm-up.spec.ts`: a rating is saved without any message on the page. The test waits for the response and
 reads what was sent and what came back.
 
-## The challenge · 25 minutes, together
+## The challenge · 15 minutes, together
 
 `tests/2-challenge.spec.ts`: four tests, each complete except for its network part.
 
 **Done when** all four pass.
 
-1. **Break.** When saving a stage fails, the row jumps back and the recruiter sees a message. Make the PATCH fail.
-2. **Patch.** How does the paging look for a customer with 1234 candidates? Change two numbers in the real answer.
-3. **Spy.** Typing a name must send one search, not one per key. Collect the requests.
-4. **API test.** A job without a title: 422. A second job with the same title: 409. No browser.
+Each step is one test, and each test has a `TODO` where the network part goes. Run the file after every step
+(`npx playwright test 2-challenge`): one more test is green.
+
+1. **Break.** When saving a stage fails, the row jumps back and the recruiter sees a message. Before `page.goto`,
+   set a route that answers the PATCH for this candidate with status 500.
+2. **Patch.** How does the paging look for a customer with 1234 candidates? Set a route for `**/api/candidates?*`,
+   fetch the real answer and change `total` and `pages`. The `?*` is needed: the URL has a query string, and a
+   pattern without it never matches (the page then shows the real count).
+3. **Spy.** Typing a name must send one search, not one per key. Collect the `q` of every request to
+   `/api/candidates` that has one. The first load of the table has no `q`: without the check the list starts with `null`.
+4. **API test.** A job without a title: 422. A second job with the title of the fixture's job: 409. No browser.
+
+Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
 
 ## Hints
 
@@ -78,6 +89,20 @@ page.on('request', (request) => {
     const url = new URL(request.url());
     if (url.pathname === '/api/candidates' && url.searchParams.has('q')) searches.push(url.searchParams.get('q')!);
 });
+```
+
+</details>
+
+<details>
+<summary>Hint 4 · API test</summary>
+
+```ts
+const withoutTitle = await request.post('/api/jobs', { data: { ...valid, title: '' } });
+expect(withoutTitle.status()).toBe(422);
+expect(await withoutTitle.json()).toEqual({ errors: { title: 'Please enter a title.' } });
+
+const sameTitle = await request.post('/api/jobs', { data: { ...valid, title: job.title } });
+expect(sameTitle.status()).toBe(409);
 ```
 
 </details>

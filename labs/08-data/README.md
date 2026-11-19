@@ -34,15 +34,22 @@ after it is teardown, and teardown runs after a failed test as well.
 
 **Done when** `npx playwright test --repeat-each=5 --workers=4` is green and the candidates table has no leftovers.
 
-1. Run `npx playwright test 2-challenge` twice. First green, then red. Read both errors: which data did the first run leave behind?
+1. Run `npx playwright test 2-challenge` twice. First green, then red. Read both errors: which data did the first run
+   leave behind? (Red at the first run already? `npm run reset` once, then run it twice.)
 2. `npm run reset` would make it green again. Instead, give each test its own data: write the fixture `applicant` in
-   `fixtures.ts` (the TODO), and use it in both tests.
-3. Remove the assertions about other people's data ("36 candidates"). Find your candidate by a name nobody else has.
+   `fixtures.ts` (the TODO). In the test file, import `test` and `expect` from `'../fixtures'`, or the tests do not
+   know `applicant`. Use it in both tests, in place of Hannah Becker and Max Power.
+   Run it: test 1 is red in a new way. "36 candidates" is 37 now, because of its own applicant.
+3. Remove the assertions about other people's data ("36 candidates", "37 candidates"). Find your candidate by a name
+   nobody else has: open the table with `?q=${applicant.lastName}`. Run it twice: green twice.
 4. Delete `workers: 1` from `playwright.config.ts`. Prove it: `npx playwright test --repeat-each=5 --workers=4`.
-5. The test with `test.fixme`: a candidate who has waited more than 14 days gets the label "Waiting 16 days".
-   No API makes an application older. Use the fixture `db`.
-6. Withdraw an application through the API, then ask the database whether the row is gone.
-7. Data that was there before the test: ask the API what the search for "mustermann" returns, then compare the table with it.
+5. The first `test.fixme`: make it a `test` that asks for `page`, `applicant` and `db`. A candidate who has waited
+   more than 14 days gets the label "Waiting 16 days". No API makes an application older. Use the fixture `db`.
+6. The second `test.fixme`: withdraw an application through the API, then ask the database whether the row is gone.
+7. The third: data that was there before the test. Ask the API what the search for "mustermann" returns, then
+   compare the table with it.
+
+Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
 
 ## Hints
 

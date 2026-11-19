@@ -30,14 +30,24 @@ A customer in Tokyo writes: "I schedule an interview for the 15th, and the candi
 **Done when** `npx playwright test --project=chromium-tokyo` reproduces the bug, the time zone tests run in
 Chromium only, and the team has decided what to do with a test for a known bug.
 
-1. Run the test: green. Add `test.use({ timezoneId: 'Asia/Tokyo' })` above it: red, "14.01.2027".
+1. Run the test: `npx playwright test 2-challenge`. Green. Add `test.use({ timezoneId: 'Asia/Tokyo' });` above the
+   test and run it again: red, "14.01.2027" instead of "15.01.2027".
 2. A line in the file is not a plan for three time zones. Remove it. In `playwright.config.ts`, add the projects
-   `chromium-new-york` and `chromium-tokyo` with their `timezoneId`.
-3. They should run only the time zone tests: tag the test with `{ tag: '@timezone' }` and give the projects `grep: /@timezone/`.
-4. Other engines should skip them: a `firefox` project with `grepInvert: /@timezone/`.
-5. `npx playwright test --project=chromium-tokyo`, then all projects.
-6. The bug is in the application: `formatInterviewDay()` in `app/src/format.ts`. Decide: repair it now, or mark the
-   test with `test.fail(condition, reason)` until it is repaired.
+   `chromium-new-york` and `chromium-tokyo` with their `timezoneId` (Hint 1). Run everything: `npx playwright test`.
+   Three tests are red: the bug in Tokyo, and the warm-up test "a candidate in Berlin reads Berlin time" in both new
+   projects. Every test now runs in three time zones, and most of them were not written for that.
+3. The new projects should run only the time zone tests: tag the test with `{ tag: '@timezone' }` and give the two
+   projects `grep: /@timezone/`. `npx playwright test --list` shows 8 tests instead of 16. Run everything: one test
+   is red, the bug in `chromium-tokyo`.
+4. Other engines should leave these tests out: a `firefox` project with `grepInvert: /@timezone/` and
+   `default: false`. It runs only when it is named: `npx playwright test --project=firefox` is green, without the
+   tagged test.
+5. The bug is in the application: `formatInterviewDay()` in `app/src/format.ts`. Decide: repair it now (Hint 3), or
+   mark the test with `test.fail(condition, reason)` until it is repaired. The condition needs `testInfo`, the second
+   argument of the test function. With the mark, `npx playwright test` is green: the list shows ✘ next to the Tokyo
+   test and the run still ends with "8 passed", because that failure was expected.
+
+Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
 
 ## Hints
 
@@ -79,6 +89,9 @@ export function formatInterviewDay(iso: string) {
 
 Without `timeZone` the formatter uses the time zone of the browser. After the repair, a test marked with `test.fail()`
 goes red with "Expected to fail, but passed": delete the mark then.
+
+`npm run app` serves the built application, so a change in `app/src` does not show there. Stop it and start
+`npm run app:dev` in the repository root: the same port, and it reads the source files.
 
 </details>
 

@@ -24,7 +24,7 @@ worker. Case 4 removes that.
 | the stars | roles, inside a shadow root | `getByRole('radio', { name: '4 stars' })`: locators see into open shadow roots |
 | the star button | an `<svg>`, nothing else | `row.locator('button:has(use[href="#icon-star"])')` |
 
-## The challenge · 35 minutes, together
+## The challenge · 30 minutes, together
 
 `tests/2-challenge.spec.ts`: the recruiter moves Felix Wagner to Screening, gives him four stars, puts him on the
 shortlist and rejects Lea Neumann. The test is written by role and name, and it fails five times, each time for a
@@ -32,14 +32,18 @@ different reason.
 
 **Done when** the test passes, and one helper knows how the dropdown works.
 
-Run it, read the failure, repair that line, run it again.
+Run it, read the failure, repair that line, run it again. After each repair the test gets one step further.
 
 1. Felix Wagner is not found. Where is he? (Look at the page in the trace.)
 2. `getByRole('combobox')` finds nothing. Open the Locator tab in UI mode and read the Aria snapshot of the row.
-3. The option "Screening" is not inside the row. Where in the DOM is it?
+3. The option "Screening" is not inside the row. Where in the DOM is it? After this repair the stars pass
+   without a change: they have roles.
 4. The button "Shortlist" does not exist under that name. What does **Pick locator** suggest, and would you keep that?
-5. The same for "Reject". The dialog after it has a role and a name.
+5. Lea Neumann is not found: the search still shows Felix, and she is on page 4. Search for her. Then "Reject":
+   the same as step 4. The dialog after it has a role and a name.
 6. Move the dropdown into a function `selectStage(row, stage)` and the search into `candidateRow(page, name)`.
+
+Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
 
 ## Hints
 
