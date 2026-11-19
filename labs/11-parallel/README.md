@@ -6,19 +6,21 @@ One test that passes alone and fails when several workers run it at the same tim
 
 ## Run it
 
+Both tests are in one folder: `solutions/11-parallel`. This folder holds only this sheet.
+
 ```bash
-cd labs/11-parallel
-npx playwright test --workers=1 --repeat-each=3     # 7 passed: three times in Chromium, three times in Firefox, and the sign-in
-npx playwright test --workers=4 --repeat-each=3     # 4 to 6 failed: Expected "37 candidates", Received "38 candidates" (or 39, 40)
-npx playwright test --workers=4 --repeat-each=3     # again: another number of failures
-npx playwright test --workers=4 --repeat-each=3 --retries=2    # some tests are "flaky", some still fail
+cd solutions/11-parallel
+npx playwright test 1-flaky --workers=1 --repeat-each=3     # 7 passed: three times in Chromium, three times in Firefox, and the sign-in
+npx playwright test 1-flaky --workers=4 --repeat-each=3     # 4 to 6 failed: Expected "37 candidates", Received "38 candidates" (or 39, 40)
+npx playwright test 1-flaky --workers=4 --repeat-each=3     # again: another number of failures
+npx playwright test 1-flaky --workers=4 --repeat-each=3 --retries=2    # some tests are "flaky", some still fail
 ```
 
 Run it in a terminal. UI mode starts with the first project only, so Firefox would be missing.
 
 ## Read it
 
-`tests/candidates.spec.ts` has one test and two marked lines:
+`tests/1-flaky.spec.ts` has one test and two marked lines:
 
 1. `request.post('/api/test/reset')` before every test: it puts the whole database back to the seed data.
 2. `toHaveText('37 candidates')`: it counts all candidates, 36 from the seed data and the one of this test.
@@ -30,14 +32,14 @@ one's test. Which run fails depends on which worker is faster.
 ## The repair
 
 ```bash
-cd ../../solutions/11-parallel
-npx playwright test --workers=4 --repeat-each=3     # 7 passed, every time
-npx playwright test --workers=4 --repeat-each=10    # 21 passed
+npx playwright test 2-fixed --workers=4 --repeat-each=3     # 7 passed, every time
+npx playwright test 2-fixed --workers=4 --repeat-each=10    # 21 passed
 ```
 
-`solutions/11-parallel/tests/candidates.spec.ts` is the same test without the two lines: no reset, because the
+`tests/2-fixed.spec.ts` is the same test without the two lines: no reset, because the
 fixture `applicant` removes its candidate after the test; no count of all candidates, because the test searches for
 its own candidate and expects "1 candidate". `fixtures.ts`, `api.ts` and `db.ts` are the ones of Case 4.
+The flaky test carries the tag `@fails-on-purpose`: the pipeline leaves it out with `--grep-invert @fails-on-purpose`.
 
 ## Checklist: flaky tests in parallel runs
 
