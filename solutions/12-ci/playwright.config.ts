@@ -34,6 +34,8 @@ export default defineConfig({
     reporter: [['list'], ['html', { open: 'never' }]],
     // a deployed environment has no database a test can reach: the tests tagged @db stay out
     grepInvert: BASE_URL ? /@db/ : undefined,
+    // the name of the environment as a tag on every test, for example "@staging-3": one merged report can then hold several environments
+    tag: process.env.E2E_ENV || undefined,
     use: {
         baseURL: BASE_URL ?? `http://localhost:${PORT}`,
         locale: 'de-DE',

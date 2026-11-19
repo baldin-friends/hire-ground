@@ -7,6 +7,7 @@ The tests of Cases 1 to 6 as one suite, the pipeline that runs it on GitHub, and
 | the suite: 34 tests in 6 files, in Chromium and Firefox | `solutions/12-ci` |
 | the pipeline (GitHub Actions) | `.github/workflows/e2e.yml` |
 | the pipeline's machine on your laptop (Docker) | `compose.yaml` |
+| the report of a pipeline run on your laptop | `npm run report -- <run id>` |
 
 This folder holds this sheet and `red-run.patch`, a change that breaks one test. Everything runs from `solutions/12-ci`.
 
@@ -49,6 +50,7 @@ machines do not matter. `tests/auth.setup.ts` signs in once per run.
 | `failOnFlakyTests` | off | a flaky test makes the run red |
 | `workers` | half of the cores | 2 |
 | `trace` | `retain-on-failure` | `on-first-retry` |
+| `screenshot`, `video` | off | kept for every failed test |
 | `webServer.reuseExistingServer` | true | false: the run starts its own application |
 
 The reporters are not in this list. The config writes `list` and `html`. The pipeline asks for its own on the
@@ -58,45 +60,59 @@ command line: `--reporter=blob,github`.
 
 `.github/workflows/e2e.yml`, to be read from top to bottom. On GitHub: the tab **Actions** of the repository.
 
+| Job | What it runs | When |
+|---|---|---|
+| `tests` | the suite `solutions/12-ci`, cut into three shards | always |
+| `visual` | the screenshots of `solutions/17-visual` against the baseline images in the repository | always |
+| `cases` | every case folder of the course, one machine per folder: `02-setup` to `14-agents` | not for a pull request |
+| `report` | one HTML report from all results, and a summary on the run and on the pull request | always, also after failures |
+
 | Lines | What they do |
 |---|---|
-| `on:` | a pull request, a push to `main`, every night at 02:00 UTC, and the button "Run workflow" |
+| `on:` | a pull request, a push to `main`, every night at 02:00 UTC, and the button "Run workflow" with its fields |
 | `concurrency:` | a new push to the same branch cancels the run that is still going |
-| `SELECTION` | a pull request runs `--grep @smoke`; everything else runs the whole suite |
+| `GREP` | a pull request runs the tests tagged `@smoke`; "Run workflow" runs what its field `grep` says |
 | `container:` | the Playwright image, with the browsers. Its tag is the version of `@playwright/test` in `package.json` |
 | `matrix: shard: [1, 2, 3]` | three machines; each runs `--shard=N/3` |
-| `fail-fast: false` | a red shard does not cancel the other two |
+| `fail-fast: false` | a failed shard does not cancel the other two |
 | `npm ci`, `npm ci --prefix app` | the image has browsers, not your packages |
-| `--reporter=blob,github` | `blob`: the raw result of one shard. `github`: failures as annotations on the run |
+| `--reporter=blob,github` | `blob`: the raw result of one job. `github`: failures as annotations on the run |
+| `--grep-invert @fails-on-purpose` | two tests of the course fail on purpose (Case 7, the visual example): the pipeline leaves them out |
 | `if: ${{ !cancelled() }}` | upload the result also when tests failed: that is the report you need |
-| `merge-reports` | downloads the three blobs and writes one HTML report: the artifact `html-report--attempt-1` |
+| `merge-reports -c …/merge.config.ts` | one HTML report from the three shards and the visual comparison: the artifact `html-report--attempt-1` |
+| `scripts/ci-summary.mjs` | the summary: the numbers, every failed test with its error, the command that opens the report |
 
-The merged report of a full run shows 37 tests, not 35: the sign-in ran once on each of the three machines.
+The merged report of a full run shows 40 tests: 34 of the suite, the sign-in once on each of the three machines, and
+three of the visual comparison.
 
-## 4 · A red run
+## 4 · A failed run
 
-1. The pull request shows red checks named `e2e / tests (2)` and `e2e / tests (3)`. Click **Details** on one of them.
-2. The summary of the run lists the three shards, the **annotations** (test, file, line, error) and the **artifacts**.
-3. Download the artifact `html-report--attempt-1`, in the browser or with the GitHub CLI:
+1. The pull request has a comment from the pipeline: how many tests failed, each one with its file, line and error,
+   and the command for step 2. The same summary is on the page of the run.
+2. Open the report of that run. It needs the GitHub CLI, signed in:
 
    ```bash
-   gh run list --limit 5                       # the runs and their ids
-   gh run view <id>                            # jobs, annotations, artifacts
-   gh run download <id> --name html-report--attempt-1 --dir red-report
-   npx playwright show-report red-report
+   npm run report -- <run id>       # the number from the comment; without a number: the last run of your branch
    ```
 
-4. In the report: open the failed test. Every attempt has a tab. "Retry #1" has the trace.
-5. In the trace: the step that failed, and the page as it was at that moment.
+   By hand: `gh run download <run id> --name html-report--attempt-1 --dir red-report`, then
+   `npx playwright show-report red-report`. Or download the artifact in the browser and unzip it.
+3. In the report, a failed test has a **screenshot** of the page at the moment of the failure, a **video** of the
+   attempt, and a tab for every attempt. "Retry #1" has the **trace**: the step that failed, and the page as it was.
+4. A failed test with the tag `visual` has the **image comparison**: Diff, Actual, Expected, Side by side, Slider.
 
 | The report says | It means | You |
 |---|---|---|
 | failed | failed three times in a row | read the trace: the application or the test is wrong |
-| flaky | failed, then passed on a retry | read the trace of the failed attempt. Here the run is red on purpose (`failOnFlakyTests`) |
+| flaky | failed, then passed on a retry | read the trace of the failed attempt. Here the run fails on purpose (`failOnFlakyTests`) |
 | did not run | something before it failed, for example the sign-in | repair that first |
 
 A trace file on its own opens with `npx playwright show-trace trace.zip`, or in a browser on https://trace.playwright.dev
 (the file stays on your machine).
+
+**The baseline images of the pipeline** are in `solutions/17-visual/tests/__screenshots__/*-linux.png`. The pipeline
+made them itself: start the workflow by hand with `update_baselines`, download the artifact `baselines`, commit the
+images. A baseline belongs to one browser on one platform, so images from a Mac do not fit a Linux machine.
 
 ## 5 · Reproduce it
 
@@ -106,7 +122,7 @@ A trace file on its own opens with `npx playwright show-trace trace.zip`, or in 
 git apply labs/12-ci/red-run.patch                    # in the repository root
 cd solutions/12-ci
 CI=1 PORT=3001 npx playwright test --grep @smoke      # as the pipeline runs it: 2 failed, 5 passed, after about 40 seconds
-npx playwright show-report                            # the failed test, the tab "Retry #1", the trace
+npx playwright show-report                            # the failed test: screenshot, video, the tab "Retry #1" with the trace
 cd ../..
 git apply -R labs/12-ci/red-run.patch                 # take the change back
 cd solutions/12-ci
@@ -151,15 +167,24 @@ Green on the laptop and red in the pipeline: what differs.
 | Linux, headless, time zone UTC | fonts and pixels; a date that the test formats itself |
 | `CI` is set | a forgotten `test.only`; retries hide a flaky test unless `failOnFlakyTests` is on |
 
-## 6 · Against a deployed environment
+## 6 · Selected tests, or another environment
+
+The button **Run workflow** (tab Actions, workflow "e2e") has two fields. The same from a terminal:
 
 ```bash
-BASE_URL=https://staging.example.com E2E_USER=… E2E_PASSWORD=… npx playwright test --grep-invert @db
+gh workflow run e2e.yml -f grep=salary                                            # only the tests that match, on a fresh application
+gh workflow run e2e.yml -f grep=@smoke -f base_url=https://staging-3.example.com  # the gate against that environment
 ```
 
-`BASE_URL` switches the `webServer` off. The account comes from the environment: in the pipeline from the
-repository's secrets (the three commented lines in `e2e.yml`). One test of this suite is tagged `@db`: it writes to
-the database, which a test cannot reach on a deployed environment.
+With `base_url` the config starts no application (`BASE_URL`) and leaves out the tests tagged `@db`: they write to
+the database, which a test cannot reach on a deployed environment. The account comes from the environment: in the
+pipeline from the repository's secrets (`E2E_USER`, `E2E_PASSWORD`, the commented lines in `e2e.yml`). `E2E_ENV`
+puts the name of the environment as a tag on every test (`tag` in the config), so one merged report can hold the
+results of several environments. On a laptop:
+
+```bash
+BASE_URL=https://staging-3.example.com E2E_ENV=@staging-3 E2E_USER=… E2E_PASSWORD=… npx playwright test --grep @smoke
+```
 
 ## For your own repository
 

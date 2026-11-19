@@ -39,10 +39,10 @@ The pink bar is the mask over the closing date. The pixel count differs a little
 ## Good to know
 
 - Without `updateSnapshots: 'none'`, a first run writes the missing baselines and fails: nothing was compared.
-- The baselines of this folder are not in the repository (`.gitignore`): every machine draws its own. In a project
-  you commit them.
-- A Mac and the Linux image of a pipeline draw text differently. Make the baselines for a pipeline in the pipeline's
-  image: in Case 8 that is the `ci` service of Docker Compose, with `--update-snapshots` added to the test command.
+- Your own baselines stay on your machine (`.gitignore`): a Mac and a Windows laptop draw their own.
+- The baselines of the pipeline are in the repository: `tests/__screenshots__/*-linux.png`. The pipeline made them
+  itself, because a Mac and the Linux image draw text differently. To make them again: start the workflow by hand
+  with `update_baselines`, download the artifact `baselines`, commit the images. Case 8 shows it.
 - Before each screenshot Playwright stops CSS animations and waits until two screenshots in a row are equal.
 
 ## Read more
