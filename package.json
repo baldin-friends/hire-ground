@@ -10,6 +10,7 @@
   "scripts": {
     "setup": "npm install --prefix app && playwright install chromium firefox webkit",
     "preflight": "node scripts/preflight.mjs",
+    "ready": "node scripts/ready.mjs",
     "app": "npm --prefix app start",
     "app:dev": "npm --prefix app run dev",
     "reset": "node scripts/reset.mjs",

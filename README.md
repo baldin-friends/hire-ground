@@ -17,7 +17,8 @@ Back after a day off:
 git stash            # only if you changed files
 git pull
 npm run app
-npm run reset        # in a second terminal: the seed data, 12 jobs and 36 candidates
+npm run ready        # in a second terminal: checks the repository, the app, the data and both browsers
+npm run reset        # when "ready" says so: back to the seed data, 12 jobs and 36 candidates
 ```
 
 Recruiter sign-in: `rita.recruiter@hireground.test` / `hire-ground`
@@ -30,7 +31,7 @@ Recruiter sign-in: `rita.recruiter@hireground.test` / `hire-ground`
 | `solutions/` | the same folders, finished |
 | `support/` | fixtures that several cases share: written in Case 4 |
 | `app/` | Hire Ground, the application under test. `app/README.md` lists its pages, its API, and what is hard to test |
-| `handouts/` | pages to keep open: the survival card, structure and config, TypeScript, Selenide to Playwright |
+| `handouts/` | pages to keep open: the survival card, the checklists of the course, structure and config, TypeScript, Selenide to Playwright |
 | `.github/workflows/e2e.yml` | the pipeline of this repository: it runs `solutions/12-ci` on GitHub Actions |
 | `compose.yaml` | the pipeline's machine on your laptop: `docker compose run --rm ci` |
 
@@ -53,6 +54,18 @@ Recruiter sign-in: `rita.recruiter@hireground.test` / `hire-ground`
 
 On Day 3 every example is finished: read the sheet in `labs/`, run the commands, read the code in `solutions/`.
 
+## Where to start after the course
+
+| You want to | Open |
+|---|---|
+| write a first test in your project | `handouts/cheat-sheet.md`, then `solutions/03-locators` and `solutions/04-forms` |
+| give tests their own data | `solutions/08-data`: `fixtures.ts` and `api.ts` |
+| set up a pipeline | `.github/workflows/e2e.yml`, `solutions/12-ci/playwright.config.ts`, the sheet `labs/12-ci/README.md` |
+| find out why a pipeline run failed | `npm run report -- <run id>`, then the checklist of Case 8 |
+| move a Selenide test | `handouts/selenide-to-playwright.md` and `labs/13-migration/migration-rules.md` |
+| let an assistant write or repair a test | `labs/14-agents`: `.mcp.json` and `prompts/` |
+| look up a checklist of the course | `handouts/checklists.md` |
+
 ## Work on a case
 
 ```bash
@@ -71,6 +84,7 @@ shows the problem when it runs. The steps are in the folder's `README.md`.
 | the counts are off (37 candidates, 13 jobs) | `npm run reset` |
 | a run fails with `ENOENT … test-results` | two runs at the same time (UI mode and a terminal) share one results folder: close one of them |
 | port 3000 is taken | `PORT=3001 npm run app` and `PORT=3001 npx playwright test` |
+| you use PowerShell | set variables first and put tags in quotes: `$env:CI=1; $env:PORT=3001; npx playwright test --grep '@smoke'` |
 | you want to change the application | `npm run app:dev` starts it with hot reload |
 | something on the machine is missing | `npm run preflight` |
 
