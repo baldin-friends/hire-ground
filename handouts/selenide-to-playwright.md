@@ -116,7 +116,7 @@ Read more: [auto-waiting](https://playwright.dev/docs/actionability) · [expect.
 | `Configuration.baseUrl`, `browserSize`, `headless` | `use: { baseURL, viewport, headless }` in `playwright.config.ts` |
 | `Configuration.browser = "firefox"` | one project per browser, all in one run |
 | `BaseTest`, `@BeforeEach`, `@AfterEach` | fixtures: setup, the test, teardown in one function |
-| a login helper in every test | one sign-in per run, saved as `storageState` |
+| a login helper that the tests call | one sign-in per run, saved as `storageState` |
 | a page object with `SelenideElement` fields | a class with `Locator` fields, or a function per component |
 | `@TestMethodOrder`, `@Order(1)`, a static field | tests that do not need each other; `test.describe.serial` is the exception |
 | `@Step`, `Allure.step("…")` | `await test.step('…', async () => { … })` |
@@ -126,7 +126,7 @@ Read more: [auto-waiting](https://playwright.dev/docs/actionability) · [expect.
 | REST Assured for test data | the `request` fixture; it can share the session of the browser |
 | the Selenide proxy for the network | `page.route(…)`: stub, change or fail a request |
 | JUnit parallel execution | workers: on by default, one browser per worker |
-| Selenoid or Selenium Grid, `Configuration.remote` | shards across machines; the browsers come with `npx playwright install` or the Docker image |
+| Selenium Grid or Selenoid (archived in December 2024), `Configuration.remote` | shards across machines; the browsers come with `npx playwright install` or the Docker image |
 
 Read more: [configuration](https://playwright.dev/docs/test-configuration) · [fixtures](https://playwright.dev/docs/test-fixtures) · [sign-in](https://playwright.dev/docs/auth) · [trace viewer](https://playwright.dev/docs/trace-viewer-intro) · [mock](https://playwright.dev/docs/mock) · [sharding](https://playwright.dev/docs/test-sharding)
 
@@ -145,6 +145,34 @@ Playwright has a Java library: <https://playwright.dev/java/docs/intro>. Locator
 (`assertThat(locator).hasText(…)`), codegen (`--target=java-junit`) and the trace viewer are there. The test runner
 is not: Java tests run on JUnit or TestNG. Fixtures, projects, shards, UI mode and the HTML report belong to
 Playwright Test, the Node.js runner of this course.
+
+Example 1 in Playwright for Java (compiled against 1.65.1, not run in this course):
+
+```java
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.junit.UsePlaywright;
+import com.microsoft.playwright.options.AriaRole;
+import org.junit.jupiter.api.Test;
+
+@UsePlaywright                                       // JUnit 5: every test gets its own page
+class JobSearchTest {
+
+    @Test
+    void searchFindsOneJob(Page page) {
+        page.navigate("http://localhost:3000/jobs");
+        page.locator("#q").fill("Reliability");
+        page.locator("#q").press("Enter");
+        assertThat(page.locator(".job-card")).hasCount(1);          // waits, like expect()
+        page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Site Reliability Engineer"))
+            .click();
+    }
+}
+```
+
+`@UsePlaywright` is Playwright's JUnit support: <https://playwright.dev/java/docs/junit>. It provides `page`,
+`browserContext`, `browser` and `request` as parameters of a test.
 
 An example in the repository: `labs/13-migration` (the Selenide classes, the line-by-line translation, the rules
 for an assistant) and `solutions/13-migration` (the same tests, rewritten).

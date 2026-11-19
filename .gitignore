@@ -18,3 +18,6 @@ app/data/
 
 # baselines of the visual example: made on your machine by its first command. In a real project they are committed.
 solutions/17-visual/tests/__screenshots__/
+
+# Case 9: the file your assistant writes. It stays on your machine.
+labs/13-migration/tests/*.assistant.spec.ts

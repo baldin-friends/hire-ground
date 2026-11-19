@@ -54,14 +54,19 @@ Files: `.github/workflows/e2e.yml`, `solutions/12-ci`, `compose.yaml`, the sheet
 
 ## Migrating from Selenide · Case 9
 
-- Sort before you port: delete what nobody would miss, move rules and calculations down to API tests, port the journeys.
-- The ground first: the sign-in, fixtures for your data, one green job in the pipeline.
-- One pull request moves one area: it adds the Playwright tests and deletes the Selenide classes of that area.
-- A test is rewritten from what it proves. It is done when it passes with `--repeat-each=5 --workers=4` and creates
-  its own data.
-- An assistant gets your rules file and may run the tests. A person reviews what it wrote.
+1. Make the list: one line per Selenide test, with what it checks.
+2. Decide per line: port it, drop it with a reason, or check it another way.
+3. Set up the ground once: the sign-in, fixtures for your data, a job in the pipeline.
+4. Port area by area. Both suites run until an area is complete in the list.
+5. Compare before you delete a class: every line has a Playwright test, and its assertions check the same things.
 
-Files: `handouts/selenide-to-playwright.md`, `labs/13-migration/migration-rules.md`.
+The list is the coverage: no tool measures it for you. To keep it next to the code, name the old test in an
+annotation of the new one: `test('…', { annotation: { type: 'replaces', description: 'CandidatePipelineTest.candidateApplies' } }, …)`.
+The JSON report then contains the list.
+
+An assistant gets `labs/13-migration/migration-rules.md` and may run the tests. A person reviews what it wrote.
+
+Files: `handouts/selenide-to-playwright.md`, `labs/13-migration/migration-rules.md`, `labs/13-migration/prompt.md`.
 
 ## AI in a test suite · Case 10
 
