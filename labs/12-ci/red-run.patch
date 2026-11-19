@@ -1,6 +1,7 @@
-A change that breaks one feature: the salary in English number format.
-One line of the application changes, and one test tagged @smoke goes red in both browsers.
-Case 8 uses it to practise reading and reproducing a red run (README.md, section 5).
+A change that breaks one feature: salaries in compact notation, "60K–76K € per year".
+One line of the application changes. One test tagged @smoke fails in both browsers, and the visual comparison
+shows the changed line as a picture. Case 8 uses it to practise reading and reproducing a failed run
+(README.md, section 5).
 
     git apply labs/12-ci/red-run.patch        apply it, in the repository root
     git apply -R labs/12-ci/red-run.patch     take it back
@@ -12,7 +13,7 @@ Case 8 uses it to practise reading and reproducing a red run (README.md, section
  
  export function formatSalary(min: number, max: number) {
 -    const f = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
-+    const f = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
++    const f = new Intl.NumberFormat('en-GB', { notation: 'compact' });
      return `${f.format(min)}–${f.format(max)} € per year`;
  }
  

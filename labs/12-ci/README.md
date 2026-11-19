@@ -100,7 +100,7 @@ A trace file on its own opens with `npx playwright show-trace trace.zip`, or in 
 
 ## 5 · Reproduce it
 
-**A red run to practise with.** `red-run.patch` changes one line of the application: salaries in English number format.
+**A failed run to practise with.** `red-run.patch` changes one line of the application: salaries in compact notation, "60K–76K € per year".
 
 ```bash
 git apply labs/12-ci/red-run.patch                    # in the repository root
