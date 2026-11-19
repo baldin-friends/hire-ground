@@ -4,7 +4,8 @@
 #   a push to main       all tests
 #
 # Three machines run one shard each. A second job merges their results into one HTML report.
-# The sheet explains every line: labs/12-ci/README.md
+# The sheet says more about every step and about sharding: labs/12-ci/README.md
+# The same pipeline with nine additions, to explore: e2e-extended.yml
 # https://playwright.dev/docs/ci · https://playwright.dev/docs/test-sharding#github-actions-example
 name: e2e
 on:
@@ -18,35 +19,53 @@ env:
 
 jobs:
   tests:
+    # A new, empty Linux machine for every job. It is deleted when the job ends.
     runs-on: ubuntu-latest
+    # A run that hangs stops after 15 minutes. Without this line: after 6 hours.
     timeout-minutes: 15
+    # The steps run inside the Playwright image: the browsers and their system libraries are installed already.
+    # The tag is the version of @playwright/test in package.json. If the two differ, the browsers are not found.
     container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble   # = the @playwright/test version in package.json
-      options: --user 1001
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001                # as the user of the runner, not as root
+    # Sharding: GitHub starts this job three times, at the same time, on three machines.
+    # Each machine gets another value of matrix.shard and runs one third of the tests.
+    # Why: workers share one machine, shards add machines. A large suite gets faster with every machine.
     strategy:
-      fail-fast: false                                    # a failed shard does not cancel the others
+      fail-fast: false                    # when one shard fails, the other two still finish: you want all results
       matrix:
         shard: [1, 2, 3]
     steps:
+      # The machine is empty. This step gets the code of the commit that started the run.
       - uses: actions/checkout@v7
+      # One fixed version of Node.js, for every run.
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - run: npm ci                                       # Playwright, as pinned in package-lock.json
-      - run: npm ci --prefix app                          # the application under test
+      # The packages exactly as package-lock.json lists them: the same Playwright as on every laptop.
+      - run: npm ci
+      # The packages of the application under test. The test run starts it (webServer in playwright.config.ts).
+      - run: npm ci --prefix app
+      # One third of the suite.
+      #   --shard=N/3     the part of this machine
+      #   blob            the raw result of this shard as a zip file, for the merge in the job "report"
+      #   github          every failed test as an annotation on the page of the run
+      #   $SELECTION      "--grep @smoke" for a pull request, otherwise empty
       - name: Run shard ${{ matrix.shard }} of 3
         working-directory: solutions/12-ci
-        # blob: the raw result of this shard, for the merge. github: failures as annotations on the run.
         run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob,github $SELECTION
+      # Keeps the result of this shard for the job "report".
+      # Without the "if", GitHub skips this step after a failed test: the run whose report you need.
       - uses: actions/upload-artifact@v7
-        if: ${{ !cancelled() }}                           # also when tests failed: that is the report you need
+        if: ${{ !cancelled() }}
         with:
           name: blob-report-${{ matrix.shard }}
           path: blob-report
-          retention-days: 1
+          retention-days: 1               # only the job "report" needs it
 
   report:
-    if: ${{ !cancelled() }}                               # also when a shard failed
+    # Starts when the three shards are done, also when one of them failed.
+    if: ${{ !cancelled() }}
     needs: [tests]
     runs-on: ubuntu-latest
     steps:
@@ -55,12 +74,15 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      # Puts the three zip files into one folder.
       - uses: actions/download-artifact@v8
         with:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
+      # One HTML report from the three results, with every trace.
       - run: npx playwright merge-reports --reporter html ./all-blob-reports
+      # The report as a download on the page of the run, kept for 14 days.
       - uses: actions/upload-artifact@v7
         with:
           name: html-report--attempt-${{ github.run_attempt }}

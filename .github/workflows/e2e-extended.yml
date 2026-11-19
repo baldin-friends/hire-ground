@@ -1,0 +1,111 @@
+# The pipeline of e2e.yml with nine additions for a larger project. Read e2e.yml first.
+# Every addition has a number. Every line without a number is the same as in e2e.yml.
+#
+# This workflow does not start by itself. Start it by hand: tab Actions, "e2e-extended", "Run workflow".
+# In a terminal:   gh workflow run e2e-extended.yml -f args='--grep @smoke'
+# The sheet lists the nine additions with a link each: labs/12-ci/README.md
+name: e2e-extended
+
+on:
+  # 1 · A manual start, with two fields to fill in.
+  workflow_dispatch:
+    inputs:
+      args:
+        description: 'More arguments for "npx playwright test", for example: --grep @smoke'
+        default: ''
+      base_url:
+        description: 'Address of a deployed environment. Empty: the run starts its own application'
+        default: ''
+  # 2 · A nightly run, Monday to Friday at 02:00 UTC. Remove the "#" of the next two lines to switch it on.
+  #     GitHub reads a schedule only from the default branch.
+  # schedule:
+  #   - cron: '0 2 * * 1-5'
+
+# 3 · The token of this run may read the repository and nothing else.
+permissions:
+  contents: read
+
+# 4 · One run per branch: a new run cancels the one that is still going.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ARGS: ${{ inputs.args }}
+  BASE_URL: ${{ inputs.base_url }}        # playwright.config.ts reads it: with an address, it starts no application
+  # 5 · The account for a deployed environment, from the secrets of the repository
+  #     (Settings, "Secrets and variables", Actions). Without them: the account of the seed data.
+  E2E_USER: ${{ secrets.E2E_USER }}
+  E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          # 6 · Keeps the downloaded packages between runs. The key is made from the two lock files.
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            app/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix app
+      - name: Run shard ${{ matrix.shard }} of 3
+        working-directory: solutions/12-ci
+        # 7 · --fail-on-flaky-tests: a test that passes only on a retry fails the run.
+        run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob,github --fail-on-flaky-tests $ARGS
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report
+          retention-days: 1
+
+  report:
+    if: ${{ !cancelled() }}
+    needs: [tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+      # 8 · Two reports from the same results: HTML for people, JUnit XML for a dashboard or a test management tool.
+      - run: npx playwright merge-reports --reporter html,junit ./all-blob-reports
+        env:
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: results.xml
+      - uses: actions/upload-artifact@v7
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        with:
+          name: junit--attempt-${{ github.run_attempt }}
+          path: results.xml
+          retention-days: 14
+      # 9 · A summary on the page of the run: the two commands that open this report on a laptop.
+      - run: |
+          echo "### Report of this run" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "gh run download ${{ github.run_id }} --name html-report--attempt-${{ github.run_attempt }} --dir report" >> "$GITHUB_STEP_SUMMARY"
+          echo "npx playwright show-report report" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
