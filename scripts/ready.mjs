@@ -45,16 +45,10 @@ if (health) {
     else bad('the test in solutions/11-parallel fails', `Run it to see why: cd solutions/11-parallel, then: npx playwright test 2-fixed\n        ${output.trim().split('\n').slice(-3).join('\n        ')}`);
 }
 
-// 4 · optional: Docker and the GitHub CLI
-const docker = run('docker', ['info', '--format', '{{.ServerVersion}}']);
-if (docker.status === 0) {
-    const image = run('docker', ['image', 'inspect', 'mcr.microsoft.com/playwright:v1.64.1-noble', '--format', 'ok']);
-    if (image.status === 0) ok('Docker runs, and the image of the pipeline is here');
-    else note('Docker runs, the image of the pipeline is not here yet', 'For the Docker slide at 11:00, start now (2.5 GB): docker pull mcr.microsoft.com/playwright:v1.64.1-noble');
-} else note('Docker is not running', 'Only needed to follow the Docker slide on your own machine. The trainer shows it.');
+// 4 · optional: the GitHub CLI
 const gh = run('gh', ['auth', 'status']);
 if (gh.status === 0) ok('the GitHub CLI is signed in');
-else note('the GitHub CLI is missing or signed out', 'Only needed for "npm run report". The browser shows the same pages.');
+else note('the GitHub CLI is missing or signed out', 'Only needed to download a report from a terminal. The browser can do the same.');
 
 console.log(problems === 0 ? '\nReady.\n' : `\nNot ready: ${problems} thing(s) to do. Do them in the order shown, then run this check again.\n`);
 process.exit(problems === 0 ? 0 : 1);

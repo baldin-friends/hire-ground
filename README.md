@@ -33,7 +33,7 @@ Recruiter sign-in: `rita.recruiter@hireground.test` / `hire-ground`
 | `app/` | Hire Ground, the application under test. `app/README.md` lists its pages, its API, and what is hard to test |
 | `handouts/` | pages to keep open: the survival card, the checklists of the course, structure and config, TypeScript, Selenide to Playwright |
 | `.github/workflows/e2e.yml` | the pipeline of this repository: it runs `solutions/12-ci` on GitHub Actions |
-| `compose.yaml` | the pipeline's machine on your laptop: `docker compose run --rm ci` |
+| `compose.yaml` | optional: the pipeline's image on your laptop, `docker compose run --rm ci` |
 
 ## The cases
 
@@ -61,7 +61,7 @@ On Day 3 every example is finished: read the sheet in `labs/`, run the commands,
 | write a first test in your project | `handouts/cheat-sheet.md`, then `solutions/03-locators` and `solutions/04-forms` |
 | give tests their own data | `solutions/08-data`: `fixtures.ts` and `api.ts` |
 | set up a pipeline | `.github/workflows/e2e.yml`, `solutions/12-ci/playwright.config.ts`, the sheet `labs/12-ci/README.md` |
-| find out why a pipeline run failed | `npm run report -- <run id>`, then the checklist of Case 8 |
+| find out why a pipeline run failed | the sheet `labs/12-ci/README.md`, sections 4 and 5 |
 | move a Selenide test | `handouts/selenide-to-playwright.md` and `labs/13-migration/migration-rules.md` |
 | let an assistant write or repair a test | `labs/14-agents`: `.mcp.json` and `prompts/` |
 | look up a checklist of the course | `handouts/checklists.md` |

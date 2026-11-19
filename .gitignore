@@ -6,7 +6,6 @@ blob-report/
 all-blob-reports/
 # a report downloaded from the pipeline (Case 8): gh run download … --dir red-report
 red-report/
-pipeline-report/
 **/playwright/.auth/
 .DS_Store
 .playwright-cli/
@@ -17,8 +16,5 @@ app/data/
 # editor folders
 .idea/
 
-# baselines of the visual example: your machine makes its own with --update-snapshots, and they stay local.
-# The baselines of the pipeline (made on Linux, by the pipeline) are in the repository.
-solutions/17-visual/tests/__screenshots__/*-darwin.png
-solutions/17-visual/tests/__screenshots__/*-win32.png
-results.json
+# baselines of the visual example: made on your machine by its first command. In a real project they are committed.
+solutions/17-visual/tests/__screenshots__/

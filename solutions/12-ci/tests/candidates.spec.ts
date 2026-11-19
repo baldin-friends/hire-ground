@@ -26,8 +26,7 @@ test('a candidate gets four stars and a place on the shortlist', async ({ page, 
 });
 
 // No API makes an application older: the db fixture writes to the database. The tag says what this test needs:
-// against a deployed environment, where the database is out of reach, leave it out with --grep-invert @db
-test('a candidate who has waited for more than 14 days is flagged', { tag: '@db' }, async ({ page, applicant, db }) => {
+test('a candidate who has waited for more than 14 days is flagged', async ({ page, applicant, db }) => {
     const sixteenDaysAgo = new Date(Date.now() - 16 * 86_400_000).toISOString();
     db.prepare('UPDATE applications SET created_at = ? WHERE id = ?').run(sixteenDaysAgo, Number(applicant.id));
 

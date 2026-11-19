@@ -8,7 +8,7 @@ import { defineConfig, devices } from '@playwright/test';
 //   BASE_URL=https://…   run against a deployed environment: this run starts no application
 //   PORT=3001            the port of the application this run starts or reuses (default 3000)
 const CI = !!process.env.CI;
-const BASE_URL = process.env.BASE_URL || undefined; // the pipeline passes an empty value when the field is not filled in
+const BASE_URL = process.env.BASE_URL || undefined;
 const PORT = Number(process.env.PORT ?? 3000);
 
 // db.ts uses node:sqlite, which Node.js 22 still calls experimental. This keeps the warning out of the test output.
@@ -26,16 +26,10 @@ export default defineConfig({
     forbidOnly: CI,
     // on a laptop every failure counts; in the pipeline a failed test runs again, up to twice
     retries: CI ? 2 : 0,
-    // a test that passes only on a retry is "flaky": in the pipeline that is a red run
-    failOnFlakyTests: CI,
     // the same number on every runner; on a laptop: half of the cores
     workers: CI ? 2 : undefined,
     // the pipeline asks for its own reporters on the command line: --reporter=blob,github
     reporter: [['list'], ['html', { open: 'never' }]],
-    // a deployed environment has no database a test can reach: the tests tagged @db stay out
-    grepInvert: BASE_URL ? /@db/ : undefined,
-    // the name of the environment as a tag on every test, for example "@staging-3": one merged report can then hold several environments
-    tag: process.env.E2E_ENV || undefined,
     use: {
         baseURL: BASE_URL ?? `http://localhost:${PORT}`,
         locale: 'de-DE',
@@ -43,9 +37,8 @@ export default defineConfig({
         testIdAttribute: 'data-qa',
         // a trace costs time: in the pipeline only the first retry records one. That is the evidence for a red or flaky test.
         trace: CI ? 'on-first-retry' : 'retain-on-failure',
-        // what a person looks at first: the page at the moment of the failure, and a video of the attempt
-        screenshot: CI ? 'only-on-failure' : 'off',
-        video: CI ? 'retain-on-failure' : 'off',
+        // the page at the moment a test fails, as a picture in the report
+        screenshot: 'only-on-failure',
     },
     projects: [
         // The browser projects come first: UI mode shows the first project when it opens.

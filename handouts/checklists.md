@@ -26,9 +26,9 @@ Folder: `solutions/11-parallel` (`1-flaky`, `2-fixed`).
 ## CI/CD · Case 8
 
 - One config for the pipeline, a laptop with `CI=1` and the Docker image.
-- A pull request runs the `@smoke` tests and the visual comparison. Everything runs after the merge and at night.
-- A failed run: read the comment, open the report (`npm run report -- <run id>`), then reproduce.
-- A flaky test fails the run. Every job uploads its result, also after a failure.
+- A pull request runs the `@smoke` tests. Everything runs after the merge.
+- A failed run: read the annotations, download the report, open the trace. Then reproduce.
+- Every shard uploads its result, also after a failure.
 
 Passes on the laptop, fails in the pipeline? Check:
 
@@ -43,7 +43,6 @@ Reproduce, from the cheapest step to the most exact one:
 
 ```bash
 npx playwright test career-page -g salary                        # the one test, on your laptop
-npx playwright test --last-failed                                # what failed in the last run here
 npx playwright test -g salary --repeat-each=10                   # how often does a flaky test fail?
 CI=1 PORT=3001 npx playwright test --grep @smoke --shard=2/3     # the command of the pipeline
 docker compose run --rm ci npx playwright test --shard=2/3       # in the image of the pipeline
