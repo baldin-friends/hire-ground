@@ -1,0 +1,40 @@
+# The machine of the pipeline, on your laptop: the same image, the same variables, the same commands.
+# It runs the suite of Case 8 (solutions/12-ci). The sheet with every step: labs/12-ci/README.md
+#
+#   docker compose run --rm ci                                     the whole suite, as the pipeline runs it
+#   docker compose run --rm ci npx playwright test --grep @smoke   what a pull request runs
+#   docker compose run --rm ci npx playwright test --shard=2/3     one shard
+#   docker compose run --rm ci bash                                a shell in the image
+#   docker compose down --volumes                                  after a change of package.json: install again next time
+#
+# Afterwards, on the laptop:  npx playwright show-report
+# https://playwright.dev/docs/docker
+services:
+  ci:
+    image: mcr.microsoft.com/playwright:v1.64.1-noble   # = the image in .github/workflows/e2e.yml = @playwright/test in package.json
+    working_dir: /repo/solutions/12-ci
+    init: true                       # recommended by the Playwright documentation: no zombie processes
+    ipc: host                        # Chromium needs more shared memory than a container gets by default
+    environment:
+      CI: '1'                        # what the pipeline sets: retries, no test.only, an application of its own
+      HG_DB: /tmp/hire-ground.db     # a new database for every run, inside the container: yours stays as it is
+    volumes:
+      - .:/repo                                   # the repository: the tests go in, the report comes out
+      - node_modules:/repo/node_modules           # the packages of the container, built for Linux: not the ones of your laptop
+      - app_node_modules:/repo/app/node_modules
+      - app_dist:/repo/app/dist                   # and its own build of the application
+    entrypoint:
+      - bash
+      - -ec
+      - |
+        # The two "npm ci" steps of the pipeline. They run at the first start; the volumes keep the result.
+        [ -e /repo/node_modules/.package-lock.json ] || npm ci --prefix /repo
+        [ -e /repo/app/node_modules/.package-lock.json ] || npm ci --prefix /repo/app
+        exec "$$@"
+      - --
+    command: npx playwright test
+
+volumes:
+  node_modules:
+  app_node_modules:
+  app_dist:

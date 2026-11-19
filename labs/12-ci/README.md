@@ -1,167 +1,179 @@
-# Case 8 · Three machines, one report
+# Case 8 · CI/CD with GitHub Actions
 
-What sharding is, how Playwright splits a suite, and how the pieces become one report again.
-Then the pipeline: what a pull request runs, and what runs at night.
+The tests of Cases 1 to 6 as one suite, the pipeline that runs it on GitHub, and what to do when a run is red.
 
-**Time** 75 minutes · together, on one screen
+| What | Where |
+|---|---|
+| the suite: 34 tests in 6 files, in Chromium and Firefox | `solutions/12-ci` |
+| the pipeline (GitHub Actions) | `.github/workflows/e2e.yml` |
+| the pipeline's machine on your laptop (Docker) | `compose.yaml` |
 
-## The problem
+This folder holds this sheet and `red-run.patch`, a change that breaks one test. Everything runs from `solutions/12-ci`.
 
-670 tests at a minute each are eleven hours on one machine, one after another. Workers help as far as the machine
-has cores. After that the suite needs more machines. Each machine runs one part of the suite: a **shard**.
-
-Two things follow. Every machine writes its own report, and nobody wants to open ten of them. And a machine in the
-pipeline is new: no session file from yesterday, no data that an earlier run left behind, a database that only
-this machine uses. A suite that passed case 7 does not notice. A suite that shares data does.
-
-## Warm-up · how the split works
-
-`labs/12-ci` holds a suite of 14 tests in 4 files. `--list` shows what a command would run, without running it.
+## 1 · The suite
 
 ```bash
-cd labs/12-ci
-npx playwright test --list                  # 14 tests in 4 files
-npx playwright test --shard=1/3 --list      # 6 tests
-npx playwright test --shard=2/3 --list      # 8 tests
-npx playwright test --shard=3/3 --list      # 0 tests: the third machine has nothing to do
+cd solutions/12-ci
+npx playwright test --list                 # 35 tests in 7 files: 17 per browser, and the sign-in
+npx playwright test                        # 35 passed
+npx playwright test --grep @smoke --list   # 7 tests: what a pull request runs
+npx playwright test --shard=1/3 --list     # 13 tests. --shard=2/3 and 3/3: 12 each
 ```
 
-Now set `fullyParallel: true` in `playwright.config.ts` and list the three shards again: 5, 5 and 4 tests.
+| File | Area | From |
+|---|---|---|
+| `career-page.spec.ts` | the career page, as a visitor | Case 1 |
+| `jobs.spec.ts` | the job administration: the form, a new tab, the API | Cases 1, 4, 5 |
+| `candidates.spec.ts` | the candidates table: stars, the waiting flag, a patched answer | Cases 2, 4, 5 |
+| `stages.spec.ts` | New to Hired; a request that fails | Cases 4, 5 |
+| `interviews.spec.ts` | the invitation mail; time zones | Cases 3, 6 |
+| `session.spec.ts` | the warning after 30 minutes, with `page.clock` | Case 6 |
 
-Every machine builds the same list of tests, in the same order, and takes its own part of it. Without
-`fullyParallel` a file cannot be cut: the tests of one file stay together, and one large file makes one slow shard.
-With `fullyParallel` the cut goes between tests. That only works for tests that do not need their neighbours,
-which is what case 7 was about.
+Every test brings its own data (`support/fixtures.ts`), so the order, the number of workers and the number of
+machines do not matter. `tests/auth.setup.ts` signs in once per run.
 
-## The challenge, part 1 · the red test that is not in the report
+## 2 · What the pipeline changes
 
-`./shard-locally.sh` plays three machines on one laptop. Each shard gets what a machine in the pipeline has: `CI=1`,
-its own application on port 3012, and its own empty database. Each shard writes a blob report, and the last step
-merges them into one HTML report.
+`playwright.config.ts` reads three variables.
 
-One test of the suite is wrong on purpose (`tests/career-page.spec.ts`, the first test).
+| Variable | Effect |
+|---|---|
+| `CI` | set by GitHub Actions, GitLab and Jenkins. See the table below |
+| `BASE_URL` | the suite runs against that address and starts no application |
+| `PORT` | the port of the application this run starts or reuses (default 3000) |
+
+| Setting | On a laptop | With `CI` |
+|---|---|---|
+| `forbidOnly` | off | a `test.only` that somebody forgot fails the run |
+| `retries` | 0 | 2. A test that passes on a retry is reported as flaky |
+| `failOnFlakyTests` | off | a flaky test makes the run red |
+| `workers` | half of the cores | 2 |
+| `trace` | `retain-on-failure` | `on-first-retry` |
+| `webServer.reuseExistingServer` | true | false: the run starts its own application |
+
+The reporters are not in this list. The config writes `list` and `html`. The pipeline asks for its own on the
+command line: `--reporter=blob,github`.
+
+## 3 · The pipeline
+
+`.github/workflows/e2e.yml`, to be read from top to bottom. On GitHub: the tab **Actions** of the repository.
+
+| Lines | What they do |
+|---|---|
+| `on:` | a pull request, a push to `main`, every night at 02:00 UTC, and the button "Run workflow" |
+| `concurrency:` | a new push to the same branch cancels the run that is still going |
+| `SELECTION` | a pull request runs `--grep @smoke`; everything else runs the whole suite |
+| `container:` | the Playwright image, with the browsers. Its tag is the version of `@playwright/test` in `package.json` |
+| `matrix: shard: [1, 2, 3]` | three machines; each runs `--shard=N/3` |
+| `fail-fast: false` | a red shard does not cancel the other two |
+| `npm ci`, `npm ci --prefix app` | the image has browsers, not your packages |
+| `--reporter=blob,github` | `blob`: the raw result of one shard. `github`: failures as annotations on the run |
+| `if: ${{ !cancelled() }}` | upload the result also when tests failed: that is the report you need |
+| `merge-reports` | downloads the three blobs and writes one HTML report: the artifact `html-report--attempt-1` |
+
+The merged report of a full run shows 37 tests, not 35: the sign-in ran once on each of the three machines.
+
+## 4 · A red run
+
+1. The pull request shows red checks named `e2e / tests (2)` and `e2e / tests (3)`. Click **Details** on one of them.
+2. The summary of the run lists the three shards, the **annotations** (test, file, line, error) and the **artifacts**.
+3. Download the artifact `html-report--attempt-1`, in the browser or with the GitHub CLI:
+
+   ```bash
+   gh run list --limit 5                       # the runs and their ids
+   gh run view <id>                            # jobs, annotations, artifacts
+   gh run download <id> --name html-report--attempt-1 --dir red-report
+   npx playwright show-report red-report
+   ```
+
+4. In the report: open the failed test. Every attempt has a tab. "Retry #1" has the trace.
+5. In the trace: the step that failed, and the page as it was at that moment.
+
+| The report says | It means | You |
+|---|---|---|
+| failed | failed three times in a row | read the trace: the application or the test is wrong |
+| flaky | failed, then passed on a retry | read the trace of the failed attempt. Here the run is red on purpose (`failOnFlakyTests`) |
+| did not run | something before it failed, for example the sign-in | repair that first |
+
+A trace file on its own opens with `npx playwright show-trace trace.zip`, or in a browser on https://trace.playwright.dev
+(the file stays on your machine).
+
+## 5 · Reproduce it
+
+**A red run to practise with.** `red-run.patch` changes one line of the application: salaries in English number format.
 
 ```bash
-./shard-locally.sh                          # needs bash; on Windows: Git Bash
-npx playwright show-report merged-report
+git apply labs/12-ci/red-run.patch                    # in the repository root
+cd solutions/12-ci
+CI=1 PORT=3001 npx playwright test --grep @smoke      # as the pipeline runs it: 2 failed, 5 passed, after about 40 seconds
+npx playwright show-report                            # the failed test, the tab "Retry #1", the trace
+cd ../..
+git apply -R labs/12-ci/red-run.patch                 # take the change back
+cd solutions/12-ci
+CI=1 PORT=3001 npx playwright test --grep @smoke      # 7 passed. This run also builds the application again, without the change
 ```
 
-### Done when
+With `CI` the run builds and starts its own application, here on port 3001, and stops it afterwards. The failing test
+ran three times in each browser: the first attempt and two retries.
 
-The merged report shows 14 tests, one of them failed, with the trace of its retry. And the same mistake is
-repaired in `e2e.yml`.
-
-### Steps
-
-1. Run `./shard-locally.sh`. Which shard is red? Read its output: how often did the test run, and why?
-2. Open the merged report. How many tests does it show, and where is the red one?
-3. Read `shard-locally.sh`. Which line decides whether a shard's report is collected? Repair it and run the script again.
-4. Open the failed test in the merged report, then its trace: the attempt "Retry #1" has one.
-5. `e2e.yml` is the same pipeline for GitHub Actions. It loses the red shard's report in three places. Find them.
-6. Correct the test (the heading is "Open positions") and run the script once more: three green shards, exit code 0.
-
-## The challenge, part 2 · the gate and the nightly
-
-A pull request should get an answer in minutes. The whole suite may take longer, at night.
-
-1. On the whiteboard, with softgarden's numbers: 670 tests, about a minute each. How many machines with four workers
-   does a ten-minute run of everything need? What else could make the gate fast?
-2. Choose the three tests of this suite that a pull request must not break. Tag them:
-   `test('the career page opens', { tag: '@smoke' }, async ({ page }) => { … })`
-3. Check the selection without running it: `npx playwright test --grep @smoke --list`
-4. `e2e.yml`, the two TODOs: a pull request runs `--grep @smoke`; a nightly schedule and the main branch run everything.
-
-### Done when
-
-`npx playwright test --grep @smoke --list` shows 3 tests in 3 files, and `e2e.yml` has a gate and a nightly.
-
-## In UI mode and on your laptop
-
-`npx playwright test` in this folder runs the suite the usual way: one application on port 3000, the `list` and
-`html` reporters, no retries. Everything that is different in the pipeline hangs on one constant in the config: `CI`.
-
-## Hints
-
-<details>
-<summary>Hint 1 · the red shard's report is missing</summary>
-
-A shard with a failing test exits with 1. In a shell, `a && b` runs `b` only when `a` succeeded: the `cp` never
-happens for the red shard. Run the copy on its own line.
+**The steps**, from the cheapest to the most exact one. Stop as soon as you see the failure.
 
 ```bash
-CI=1 HG_DB="$PWD/shard-data/shard-$i.db" npx playwright test --shard="$i/$SHARDS" || status=1
-cp blob-report/*.zip all-blob-reports/
+cd solutions/12-ci
+npx playwright test career-page -g salary                 # 1 · the one test, on your laptop
+npx playwright test --last-failed                         # 2 · what failed in the last run here
+npx playwright test -g salary --repeat-each=10            # 3 · a flaky test: ten times
+CI=1 PORT=3001 npx playwright test --grep @smoke --shard=2/3   # 4 · the command of the pipeline. With CI it starts its own application, here on a free port
 ```
 
-</details>
+5 · The same image as the pipeline, with Docker. In the repository root:
 
-<details>
-<summary>Hint 2 · the three places in e2e.yml</summary>
-
-GitHub Actions skips the steps after a failed step, and a job whose `needs` failed. A matrix cancels its other
-jobs when one fails. So:
-
-1. `strategy:` gets `fail-fast: false`: a red shard does not cancel the others.
-2. The step `actions/upload-artifact` of the shard gets `if: ${{ !cancelled() }}`.
-3. The job `merge-reports` gets `if: ${{ !cancelled() }}`.
-
-</details>
-
-<details>
-<summary>Hint 3 · why the test ran three times</summary>
-
-With `CI` set, the config has `retries: 2`. A test that fails runs again, up to twice. The first retry records a
-trace (`trace: 'on-first-retry'`). A test that passes on a retry is reported as flaky, and `failOnFlakyTests`
-turns that into a red run.
-
-</details>
-
-<details>
-<summary>Hint 4 · the arithmetic</summary>
-
-670 minutes of tests in 10 minutes need 67 tests running at the same time. With four workers per machine that
-is 17 machines. The other three levers: a selection for the gate (40 tagged tests on 3 machines with four workers
-take about 4 minutes), tests that are faster than a minute (no login through the form, data through the API,
-no sleeps), and fewer browser tests for things a unit test can check.
-
-</details>
-
-<details>
-<summary>Hint 5 · the gate and the nightly in e2e.yml</summary>
-
-```yaml
-on:
-  pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 2 * * 1-5'        # 02:00 UTC, Monday to Friday
-  workflow_dispatch:
-
-env:
-  SELECTION: ${{ github.event_name == 'pull_request' && '--grep @smoke' || '' }}
+```bash
+docker compose run --rm ci                                    # the whole suite: 35 passed
+docker compose run --rm ci npx playwright test --grep @smoke  # what a pull request runs
+docker compose run --rm ci npx playwright test --shard=2/3    # one shard
+docker compose run --rm ci bash                               # a shell in the image
+npx playwright show-report                                    # on the laptop: the report of the container
 ```
 
-and in the step that runs the shard: `npx playwright test --shard=… $SELECTION`
+The first start installs the packages inside the container (the two `npm ci` steps of the pipeline) and keeps
+them in volumes. After a change of `package.json`: `docker compose down --volumes`.
+The container has its own database and its own application: yours are not touched.
+It uses the Node.js of the image; the pipeline installs Node.js 22 with `setup-node`.
+On Linux the files the container writes (`playwright-report`, `test-results`) belong to root.
 
-</details>
+Green on the laptop and red in the pipeline: what differs.
 
-## Done early?
+| Difference | Typical effect |
+|---|---|
+| a slower machine, two workers | a race that the laptop always wins |
+| a new database, no saved session | a test that needed data from an earlier run |
+| Linux, headless, time zone UTC | fonts and pixels; a date that the test formats itself |
+| `CI` is set | a forgotten `test.only`; retries hide a flaky test unless `failOnFlakyTests` is on |
 
-- `./shard-locally.sh 5`: five shards. How many tests does each one get?
-- After a red run: `npx playwright test --last-failed` runs only what failed last time.
-- `npx playwright test --only-changed --list`: the test files with uncommitted changes. In a pipeline:
-  `--only-changed=origin/main`, the files a pull request touched.
-- This repository has the pipeline switched on: `.github/workflows/e2e.yml` runs `solutions/12-ci`. Look at the
-  Actions tab on GitHub.
+## 6 · Against a deployed environment
+
+```bash
+BASE_URL=https://staging.example.com E2E_USER=… E2E_PASSWORD=… npx playwright test --grep-invert @db
+```
+
+`BASE_URL` switches the `webServer` off. The account comes from the environment: in the pipeline from the
+repository's secrets (the three commented lines in `e2e.yml`). One test of this suite is tagged `@db`: it writes to
+the database, which a test cannot reach on a deployed environment.
+
+## For your own repository
+
+- Copy `e2e.yml` and `playwright.config.ts`, and change the folder and the start command of the application.
+- The image tag and the version of `@playwright/test` change together, in one pull request.
+- In the branch protection of `main`, require the checks of this workflow: then a red gate blocks the merge.
+- Tag the tests a pull request must never break. Everything else runs after the merge and at night.
 
 ## Read more
 
-- Sharding, and the GitHub Actions example this pipeline follows: https://playwright.dev/docs/test-sharding
-- Merging blob reports: https://playwright.dev/docs/test-sharding#merge-reports-cli
-- The blob reporter: https://playwright.dev/docs/test-reporters#blob-reporter
-- Continuous integration, for GitHub Actions, GitLab, Jenkins and others: https://playwright.dev/docs/ci
-- The Docker image and its version tag: https://playwright.dev/docs/docker
-- Tags and `--grep`: https://playwright.dev/docs/test-annotations#tag-tests
+- CI: https://playwright.dev/docs/ci · https://playwright.dev/docs/ci-intro
+- Sharding and merged reports: https://playwright.dev/docs/test-sharding
+- Docker: https://playwright.dev/docs/docker
 - Retries and flaky tests: https://playwright.dev/docs/test-retries
-- All command-line options (`--shard`, `--last-failed`, `--only-changed`, `--forbid-only`): https://playwright.dev/docs/test-cli#all-options
+- Tags: https://playwright.dev/docs/test-annotations#tag-tests
+- The trace viewer: https://playwright.dev/docs/trace-viewer
+- All command-line options: https://playwright.dev/docs/test-cli#all-options

@@ -1,27 +1,30 @@
 import { test, expect } from '@playwright/test';
 
-// The career page: tests that only read. Six tests in one file, the largest file of this suite.
-// @smoke marks what the gate runs on every pull request: https://playwright.dev/docs/test-annotations#tag-tests
+// The career page, as a visitor. From Case 1 (labs/05-tools). These tests only read, and they read jobs that no test changes.
+// @smoke marks what a pull request runs: https://playwright.dev/docs/test-annotations#tag-tests
 
-test.use({ storageState: { cookies: [], origins: [] } }); // no sign-in
+test.use({ storageState: { cookies: [], origins: [] } }); // a visitor: nobody is signed in
 
-test('the career page opens', { tag: '@smoke' }, async ({ page }) => {
+test('the search finds the job for a researcher', async ({ page }) => {
     await page.goto('/jobs');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Open positions');
+    await page.getByLabel('Search jobs').fill('researcher');
+    await page.getByRole('button', { name: 'Search' }).click();
+
+    await expect(page.getByRole('status')).toHaveText('1 job');
+    await expect(page.getByRole('article')).toContainText('UX Researcher');
 });
 
-const TEAMS = [
-    { team: 'QA', job: 'Senior QA Engineer' },
-    { team: 'Engineering', job: 'Site Reliability Engineer' },
-    { team: 'Product', job: 'UX Researcher' },
-    { team: 'Sales', job: 'Account Executive DACH' },
-    { team: 'People', job: 'Recruiter (Tech)' },
-];
+test('a job page shows the salary and an Apply link', { tag: '@smoke' }, async ({ page }) => {
+    await page.goto('/jobs');
+    await page.getByRole('link', { name: 'Frontend Developer (React)' }).click();
 
-for (const { team, job } of TEAMS) {
-    test(`the career page lists a job of team ${team}`, async ({ page }) => {
-        await page.goto('/jobs');
-        await page.getByLabel('Team').selectOption(team);
-        await expect(page.getByRole('article', { name: job })).toBeVisible();
-    });
-}
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Frontend Developer (React)');
+    await expect(page.getByText('60.000–76.000 € per year')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Apply' })).toBeVisible();
+});
+
+test('the job page has the job title as its heading', async ({ page }) => {
+    await page.goto('/jobs/test-automation-engineer');
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Test Automation Engineer');
+});

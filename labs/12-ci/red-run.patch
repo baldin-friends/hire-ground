@@ -1,0 +1,18 @@
+A change that breaks one feature: the salary in English number format.
+One line of the application changes, and one test tagged @smoke goes red in both browsers.
+Case 8 uses it to practise reading and reproducing a red run (README.md, section 5).
+
+    git apply labs/12-ci/red-run.patch        apply it, in the repository root
+    git apply -R labs/12-ci/red-run.patch     take it back
+
+--- a/app/src/format.ts
++++ b/app/src/format.ts
+@@ -15,7 +15,7 @@
+ }
+ 
+ export function formatSalary(min: number, max: number) {
+-    const f = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
++    const f = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+     return `${f.format(min)}–${f.format(max)} € per year`;
+ }
+ 

@@ -1,29 +1,33 @@
-import { test, expect } from '../../../support/fixtures.per-worker';
-import type { Locator } from '@playwright/test';
+import { test, expect } from '../../../support/fixtures';
 
-/** The stage dropdown from case 2: built from <div>s, and its panel is rendered at the end of <body>. */
-async function selectStage(row: Locator, stage: string) {
-    await row.locator('.hg-select__trigger').click();
-    await row.page().locator('.hg-select__panel').getByText(stage, { exact: true }).click();
-}
+// The stages of a candidate. From Case 4 (New to Hired) and Case 5 (a request that fails).
+// The dropdown is built from <div>s, and its panel is rendered at the end of <body> (Case 2).
 
-test('a new candidate moves to Screening', { tag: '@smoke' }, async ({ page, applicant }) => {
+test('a candidate goes from New to Hired', { tag: '@smoke' }, async ({ page, applicant }) => {
     await page.goto(`/recruiter/candidates?q=${applicant.lastName}`);
-    await selectStage(page.getByRole('row', { name: applicant.name }), 'Screening');
-    await expect(page.getByText(`${applicant.name} moved to Screening.`)).toBeVisible();
+
+    const row = page.getByRole('row', { name: applicant.name });
+    const stage = row.locator('.hg-select__value');
+    await expect(stage).toHaveText('New');
+
+    for (const next of ['Screening', 'Interview', 'Offer', 'Hired']) {
+        await row.locator('.hg-select__trigger').click();
+        await page.locator('.hg-select__panel').getByText(next, { exact: true }).click();
+        await expect(page.getByText(`${applicant.name} moved to ${next}.`)).toBeVisible();
+    }
+
+    await expect(stage).toHaveText('Hired');
 });
 
-test('a rejected candidate hears about it by mail', async ({ page, request, applicant }) => {
+test('when saving fails, the stage jumps back and the recruiter is told', async ({ page, applicant }) => {
+    // every request to this candidate's address gets a 500: the page cannot save
+    await page.route(`**/api/applications/${applicant.id}`, (route) => route.fulfill({ status: 500 }));
     await page.goto(`/recruiter/candidates?q=${applicant.lastName}`);
-    await page.getByRole('row', { name: applicant.name }).locator('button:has(use[href="#icon-reject"])').click();
-    await page.getByRole('dialog', { name: `Reject ${applicant.name}?` }).getByRole('button', { name: 'Reject' }).click();
-    await expect(page.getByText(`${applicant.name} rejected.`)).toBeVisible();
+    const row = page.getByRole('row', { name: applicant.name });
 
-    // The mail leaves through a queue, one to two seconds later: poll the mailbox, never sleep (case 3).
-    await expect
-        .poll(async () => {
-            const mails: { subject: string }[] = await (await request.get('/api/mail', { params: { to: applicant.email } })).json();
-            return mails.map((mail) => mail.subject);
-        })
-        .toContainEqual(expect.stringContaining('Status update'));
+    await row.locator('.hg-select__trigger').click();
+    await page.locator('.hg-select__panel').getByText('Interview', { exact: true }).click();
+
+    await expect(page.getByRole('alert')).toHaveText('The stage could not be saved. The change was undone.');
+    await expect(row.locator('.hg-select__value')).toHaveText('New');
 });
