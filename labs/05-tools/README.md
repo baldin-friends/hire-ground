@@ -41,15 +41,18 @@ npx playwright codegen http://localhost:3000/login
 
 **Done when** the test fails if publishing fails, passes twice in a row, and leaves no job behind.
 
-1. Run it twice: `npx playwright test 2-challenge`. Both runs are green.
-2. Open the trace of the second run: `npx playwright show-report`, the test, "Traces". Look at the step "Publish":
-   what does the page show? What did `POST /api/jobs` answer (Network tab)?
-3. Add the assertions that would have caught it: the message after Publish, the job on the career page.
+1. Run it twice: `npx playwright test 2-challenge`. Both runs are green. Open the trace of the second run:
+   `npx playwright show-report`, the test, "Traces". Look at the step "Publish": what does the page show?
+   What did `POST /api/jobs` answer (Network tab)?
+2. Add the assertions that would have caught it: the message after Publish, the heading of the job page.
    Run it: now it is red, for the right reason.
-4. Make it repeatable: a title no other run has, and remove the job after the test (`GET /api/admin/jobs`, `DELETE /api/jobs/:id`).
-5. Remove the sign-in: the config's `storageState` has a session. Delete the `test.use` line at the top.
-6. The deadline `2026-12-31` is a failure with a start date. Compute it.
-7. Delete the clicks that only moved the focus. Give the parts a name with `test.step()`.
+3. Give the job a title no other run has. Run it twice: green twice.
+4. Remove the sign-in: the config's `storageState` has a session. Delete the `test.use` line at the top.
+5. Remove the job after the test (`GET /api/admin/jobs`, `DELETE /api/jobs/:id`). This needs the session of step 4.
+6. The deadline `2026-12-31` is a failure with a start date: compute it. Delete the clicks that only moved the
+   focus, and give the parts a name with `test.step()`.
+
+Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
 
 ## Hints
 
@@ -62,7 +65,10 @@ clicked on, found the job of the first run on the career page, and passed. A rec
 </details>
 
 <details>
-<summary>Hint 2 · unique and removed</summary>
+<summary>Hint 2 · unique and removed (steps 3 and 5)</summary>
+
+The `afterEach` uses the saved session. While the file still has its `test.use({ storageState: … })` line, the
+request is not signed in and the cleanup fails: remove the sign-in first (step 4).
 
 ```ts
 let title: string;
