@@ -64,7 +64,6 @@ command line: `--reporter=blob,github`.
 |---|---|---|
 | `tests` | the suite `solutions/12-ci`, cut into three shards | always |
 | `visual` | the screenshots of `solutions/17-visual` against the baseline images in the repository | always |
-| `cases` | every case folder of the course, one machine per folder: `02-setup` to `14-agents` | not for a pull request |
 | `report` | one HTML report from all results, and a summary on the run and on the pull request | always, also after failures |
 
 | Lines | What they do |
@@ -77,7 +76,6 @@ command line: `--reporter=blob,github`.
 | `fail-fast: false` | a failed shard does not cancel the other two |
 | `npm ci`, `npm ci --prefix app` | the image has browsers, not your packages |
 | `--reporter=blob,github` | `blob`: the raw result of one job. `github`: failures as annotations on the run |
-| `--grep-invert @fails-on-purpose` | two tests of the course fail on purpose (Case 7, the visual example): the pipeline leaves them out |
 | `if: ${{ !cancelled() }}` | upload the result also when tests failed: that is the report you need |
 | `merge-reports -c …/merge.config.ts` | one HTML report from the three shards and the visual comparison: the artifact `html-report--attempt-1` |
 | `scripts/ci-summary.mjs` | the summary: the numbers, every failed test with its error, the command that opens the report |

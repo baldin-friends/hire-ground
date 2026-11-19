@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 //   npx playwright test 2-regression      red
 //   npx playwright show-report            open the test: Diff, Actual, Expected, Side by side, Slider
 
-test('the job page with a new bar at the bottom', { tag: '@fails-on-purpose' }, async ({ page }) => {
+test('the job page with a new bar at the bottom', async ({ page }) => {
     await page.goto('/jobs/senior-qa-engineer?bugs=dup-apply');
 
     await expect(page).toHaveScreenshot('job-page.png', { mask: [page.getByText(/^Apply by/)] });

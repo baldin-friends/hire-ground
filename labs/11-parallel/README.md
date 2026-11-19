@@ -39,7 +39,6 @@ npx playwright test 2-fixed --workers=4 --repeat-each=10    # 21 passed
 `tests/2-fixed.spec.ts` is the same test without the two lines: no reset, because the
 fixture `applicant` removes its candidate after the test; no count of all candidates, because the test searches for
 its own candidate and expects "1 candidate". `fixtures.ts`, `api.ts` and `db.ts` are the ones of Case 4.
-The flaky test carries the tag `@fails-on-purpose`: the pipeline leaves it out with `--grep-invert @fails-on-purpose`.
 
 ## Checklist: flaky tests in parallel runs
 

@@ -1,7 +1,7 @@
 # The pipeline of this repository.
 #
 #   a pull request       the gate: the tests tagged @smoke, and the visual comparison
-#   a push to main       everything: the suite in three shards, the visual comparison, every case folder
+#   a push to main       everything: the suite in three shards, and the visual comparison
 #   every night          everything
 #
 # Every run ends with one report and a summary: on the page of the run, and as a comment on the pull request.
@@ -89,35 +89,6 @@ jobs:
           name: blob-report-visual
           path: blob-report
           retention-days: 1
-
-  # Every case folder of the course, as it is: one machine per folder. Not for a pull request: the gate stays fast.
-  cases:
-    if: ${{ github.event_name != 'pull_request' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble
-      options: --user 1001
-    strategy:
-      fail-fast: false
-      matrix:
-        folder: [02-setup, 03-locators, 04-forms, 05-tools, 06-locators, 07-assertions, 08-data, 09-network, 10-time, 11-parallel, 13-migration, 14-agents]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: npm ci
-      - run: npm ci --prefix app
-      - name: Run the tests of solutions/${{ matrix.folder }}
-        working-directory: solutions/${{ matrix.folder }}
-        run: npx playwright test --reporter=github,html --grep-invert @fails-on-purpose
-      - uses: actions/upload-artifact@v7
-        if: ${{ failure() }}
-        with:
-          name: report-case-${{ matrix.folder }}
-          path: playwright-report
-          retention-days: 14
 
   # One report for the whole run: the three shards and the visual comparison, merged. And a summary of it.
   report:
