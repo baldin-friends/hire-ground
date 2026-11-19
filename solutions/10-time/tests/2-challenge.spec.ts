@@ -1,16 +1,14 @@
 import { test, expect } from '../../../support/fixtures';
 
-// The tag puts this test into the time zone projects of playwright.config.ts:
-//   npx playwright test --project=chromium-tokyo
-// https://playwright.dev/docs/test-annotations#tag-tests
+// A customer in Tokyo writes: "I schedule an interview for the 15th, and the candidates table shows the 14th."
+// Nobody in Berlin can reproduce it. This test passes, too.
+//
+// This version also runs in the project chromium-tokyo, and says there that the bug is known. The steps are in README.md.
 
 test('the table shows the day of the interview that the recruiter entered', { tag: '@timezone' }, async ({ page, applicant }, testInfo) => {
-    // A known bug gets a name instead of a red pipeline: the test is expected to fail in Tokyo.
-    // When the application is repaired, this line makes the test fail ("expected to fail, but passed"): delete it then.
-    // https://playwright.dev/docs/api/class-test#test-fail
     test.fail(
         testInfo.project.name === 'chromium-tokyo',
-        'formatInterviewDay() in app/src/format.ts cuts the day out of the UTC instant: one day early east of Greenwich in the morning',
+        'formatInterviewDay() in app/src/format.ts cuts the day out of the UTC instant: one day early in Tokyo',
     );
 
     await page.goto(`/recruiter/applications/${applicant.id}`);

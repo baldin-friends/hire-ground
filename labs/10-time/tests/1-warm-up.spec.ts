@@ -49,13 +49,4 @@ test.describe('clock', () => {
         await page.getByRole('button', { name: 'Stay signed in' }).click();
         await expect(page.getByRole('alertdialog')).toBeHidden();
     });
-
-    test('fifteen days from now a new candidate is flagged as waiting', async ({ page, applicant }) => {
-        // Case 4 made the application older in the database. Here the browser lives fifteen days ahead.
-        await page.clock.install({ time: new Date(Date.now() + 15 * 86_400_000) });
-
-        await page.goto(`/recruiter/candidates?q=${applicant.lastName}`);
-
-        await expect(page.getByRole('row', { name: applicant.name }).getByText('Waiting 15 days')).toBeVisible();
-    });
 });

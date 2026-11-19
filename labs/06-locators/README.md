@@ -35,7 +35,8 @@ different reason.
 Run it, read the failure, repair that line, run it again. After each repair the test gets one step further.
 
 1. Felix Wagner is not found. Where is he? (Look at the page in the trace.)
-2. `getByRole('combobox')` finds nothing. Open the Locator tab in UI mode and read the Aria snapshot of the row.
+2. `getByRole('combobox')` finds nothing. In UI mode click **Pick locator**, then the dropdown in the snapshot: the
+   Locator tab shows its aria snapshot, `- text: …`. No role. (The whole row: `console.log(await felix.ariaSnapshot())`.)
 3. The option "Screening" is not inside the row. Where in the DOM is it? After this repair the stars pass
    without a change: they have roles.
 4. The button "Shortlist" does not exist under that name. What does **Pick locator** suggest, and would you keep that?

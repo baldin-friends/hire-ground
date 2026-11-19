@@ -25,8 +25,9 @@ npx playwright test          # signs in, then runs the tests
 ## Warm-up
 
 `tests/1-warm-up.spec.ts` uses the fixture `job` from `fixtures.ts`: a job created through the API before the test and
-deleted after it. Run the file twice. Then read the fixture: everything before `await use(job)` is setup, everything
-after it is teardown, and teardown runs after a failed test as well.
+deleted after it. Run the file twice. Then read the fixture, it is three lines: create the job, `await use(job)`
+(the test runs here), delete the job. The last line runs after a failed test as well. The calls to the API are in
+`api.ts`, one small function each.
 
 ## The challenge · 45 minutes, together
 
@@ -37,7 +38,7 @@ after it is teardown, and teardown runs after a failed test as well.
 1. Run `npx playwright test 2-challenge` twice. First green, then red. Read both errors: which data did the first run
    leave behind? (Red at the first run already? `npm run reset` once, then run it twice.)
 2. `npm run reset` would make it green again. Instead, give each test its own data: write the fixture `applicant` in
-   `fixtures.ts` (the TODO). In the test file, import `test` and `expect` from `'../fixtures'`, or the tests do not
+   `fixtures.ts` (the TODO): three lines, like `job`. In the test file, import `test` and `expect` from `'../fixtures'`, or the tests do not
    know `applicant`. Use it in both tests, in place of Hannah Becker and Max Power.
    Run it: test 1 is red in a new way. "36 candidates" is 37 now, because of its own applicant.
 3. Remove the assertions about other people's data ("36 candidates", "37 candidates"). Find your candidate by a name
@@ -66,19 +67,13 @@ Test 2 applies with `max.power@example.com`; the application of the first run st
 
 ```ts
 applicant: async ({ request, job }, use) => {
-    const id = randomUUID().slice(0, 8);
-    const person = { firstName: 'Ada', lastName: `Test-${id}`, email: `ada.test-${id}@example.com` };
-    const response = await request.post('/api/applications', {
-        multipart: { jobId: job.id, ...person, consent: 'true', cv: CV },
-    });
-    expect(response.status(), `POST /api/applications: ${await response.text()}`).toBe(201);
-    const created = await response.json();
-
-    await use({ id: created.id, reference: created.reference, ...person, name: `${person.firstName} ${person.lastName}` });
-
-    await request.delete(`/api/applications/${created.id}`);
+    const applicant = await createApplicant(request, job); // before the test
+    await use(applicant); //                                  the test runs here
+    await deleteApplicant(request, applicant); //             after the test
 },
 ```
+
+`createApplicant` and `deleteApplicant` are in `api.ts`: one call to the API each.
 
 It asks for `job`. Playwright sets up `job` first and tears it down last, so the application is gone before the job
 is deleted. The API refuses to delete a job that has applications.

@@ -10,18 +10,19 @@ cd labs/09-network
 npx playwright test          # once, in a terminal: signs in and saves the session
 ```
 
-The warm-up passes and the four tests of the challenge fail (`4 failed, 2 passed`): that is the starting point.
+The warm-up passes, the two tests of the challenge fail, and two more are skipped (`2 failed, 2 skipped, 2 passed`):
+that is the starting point.
 
 The fixtures `job` and `applicant` are the ones from Case 4. They live in `support/fixtures.ts`, and every case from here on imports them from there.
 
-## Four things a test can do with a request
+## Which one? Ask what you want to know
 
-| | The test | API |
+| You want to know | The test | You write |
 |---|---|---|
-| spy | listens and changes nothing | `page.waitForResponse()`, `page.on('request')` |
-| stub | answers instead of the server | `route.fulfill({ status, json })` |
-| patch | lets the server answer and changes a part | `route.fetch()`, then `route.fulfill({ response, json })` |
-| break | makes the request fail | `route.fulfill({ status: 500 })`, `route.abort()` |
+| what the page really sent | listens: spy | `page.waitForResponse(…)` |
+| what the page does when the server fails | breaks the request | `route.fulfill({ status: 500 })` |
+| what the page does with an answer you cannot produce | patches the real answer | `route.fetch()`, then `route.fulfill({ response, json })` |
+| what the page does with the answer of somebody else's service | answers itself: stub | `route.fulfill({ json: … })` |
 
 Stub what you do not own: a third party, a payment provider. Test what you own for real, and patch the one detail
 that real data does not give you.
@@ -33,47 +34,49 @@ reads what was sent and what came back.
 
 ## The challenge · 15 minutes, together
 
-`tests/2-challenge.spec.ts`: four tests, each complete except for its network part.
+`tests/2-challenge.spec.ts`: two tests, each complete except for its network part.
 
-**Done when** all four pass.
+**Done when** both pass.
 
-Each step is one test, and each test has a `TODO` where the network part goes. Run the file after every step
-(`npx playwright test 2-challenge`): one more test is green.
+1. Run it: `npx playwright test 2-challenge`. Two tests fail. Read both failures: the page did what it always does.
+   Saving worked, and the table shows its real count.
+2. **Break.** When saving a stage fails, the row jumps back and the recruiter sees a message. Before `page.goto`, set
+   a route that answers every request to this candidate's address with status 500. The first test is green.
+3. **Patch.** How does the paging look for a customer with 1234 candidates? Set a route for `**/api/candidates?*`,
+   fetch the real answer and change `total` and `pages`. The second test is green. The `?*` is needed: the URL has a
+   query string, and a pattern without it never matches (the page then shows the real count).
+4. Look at the second test in UI mode (`npx playwright test 2-challenge --ui`): the rows are the real candidates.
+   Only "1234 candidates" and "Page 1 of 124" come from the test.
 
-1. **Break.** When saving a stage fails, the row jumps back and the recruiter sees a message. Before `page.goto`,
-   set a route that answers the PATCH for this candidate with status 500.
-2. **Patch.** How does the paging look for a customer with 1234 candidates? Set a route for `**/api/candidates?*`,
-   fetch the real answer and change `total` and `pages`. The `?*` is needed: the URL has a query string, and a
-   pattern without it never matches (the page then shows the real count).
-3. **Spy.** Typing a name must send one search, not one per key. Collect the `q` of every request to
-   `/api/candidates` that has one. The first load of the table has no `q`: without the check the list starts with `null`.
-4. **API test.** A job without a title: 422. A second job with the title of the fixture's job: 409. No browser.
-
-Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
+Steps 2 and 3 are at the end of `tests/2-challenge.spec.ts` as comments, ready to copy.
 
 ## Hints
 
 <details>
-<summary>Hint 1 · break</summary>
+<summary>Hint 1 · break (step 2)</summary>
+
+```ts
+await page.route(`**/api/applications/${applicant.id}`, (route) => route.fulfill({ status: 500 }));
+```
+
+Set the route before the page sends the request. If only some requests to an address should fail, look at the
+request and pass the others on:
 
 ```ts
 await page.route(`**/api/applications/${applicant.id}`, async (route) => {
-    if (route.request().method() === 'PATCH') await route.fulfill({ status: 500, json: { error: 'internal' } });
+    if (route.request().method() === 'PATCH') await route.fulfill({ status: 500 });
     else await route.fallback();
 });
 ```
 
-Set the route before the page sends the request. `route.fallback()` passes the request on to the next handler, and
-in the end to the server.
-
 </details>
 
 <details>
-<summary>Hint 2 · patch</summary>
+<summary>Hint 2 · patch (step 3)</summary>
 
 ```ts
 await page.route('**/api/candidates?*', async (route) => {
-    const response = await route.fetch();
+    const response = await route.fetch();          // the request goes to the real server
     const body = await response.json();
     await route.fulfill({ response, json: { ...body, total: 1234, pages: 124 } });
 });
@@ -81,31 +84,15 @@ await page.route('**/api/candidates?*', async (route) => {
 
 </details>
 
-<details>
-<summary>Hint 3 · spy</summary>
+## Done early?
 
-```ts
-page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.pathname === '/api/candidates' && url.searchParams.has('q')) searches.push(url.searchParams.get('q')!);
-});
-```
+The challenge file has two more tests, skipped with `test.fixme`. Remove `.fixme` from one and work through its `TODO`.
 
-</details>
+- **Spy.** Typing a name must send one search, not one per key. Collect the `q` of every request to
+  `/api/candidates` that has one. The first load of the table has no `q`: without the check the list starts with `null`.
+- **API test.** A job without a title: 422. A second job with the title of the fixture's job: 409. No browser.
 
-<details>
-<summary>Hint 4 · API test</summary>
-
-```ts
-const withoutTitle = await request.post('/api/jobs', { data: { ...valid, title: '' } });
-expect(withoutTitle.status()).toBe(422);
-expect(await withoutTitle.json()).toEqual({ errors: { title: 'Please enter a title.' } });
-
-const sameTitle = await request.post('/api/jobs', { data: { ...valid, title: job.title } });
-expect(sameTitle.status()).toBe(409);
-```
-
-</details>
+The code for both is at the end of the challenge file, and the solution has both.
 
 ## Read more
 

@@ -63,17 +63,9 @@ test.fixme('the table shows what the API returns', async () => {
 // The numbers are the steps in README.md. The finished files: solutions/08-data/fixtures.ts and tests/2-challenge.spec.ts
 //
 // Step 2 · the fixture applicant. In ../fixtures.ts, in place of the line  throw new Error('TODO: …');
-//         const id = randomUUID().slice(0, 8);
-//         const person = { firstName: 'Ada', lastName: `Test-${id}`, email: `ada.test-${id}@example.com` };
-//         const response = await request.post('/api/applications', {
-//             multipart: { jobId: job.id, ...person, consent: 'true', cv: CV },
-//         });
-//         expect(response.status(), `POST /api/applications: ${await response.text()}`).toBe(201);
-//         const created = await response.json();
-//
-//         await use({ id: created.id, reference: created.reference, ...person, name: `${person.firstName} ${person.lastName}` });
-//
-//         await request.delete(`/api/applications/${created.id}`);
+//         const applicant = await createApplicant(request, job);
+//         await use(applicant);
+//         await deleteApplicant(request, applicant);
 // In this file, in place of the first line. Without it the tests do not know applicant:
 // import { test, expect } from '../fixtures';
 // Test 1 asks for the fixture and uses its name in place of 'Hannah Becker', in two places:

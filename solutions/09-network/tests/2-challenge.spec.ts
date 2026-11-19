@@ -1,14 +1,12 @@
 import { test, expect, inDays } from '../../../support/fixtures';
 
-// Three situations that real data does not produce on demand, and one test without a browser.
+// Two situations that real data does not produce on demand: a request that fails, and an answer that is rare.
+// This is the finished version: each test sets its route before the page loads.
 // page.route(): https://playwright.dev/docs/network  ·  https://playwright.dev/docs/mock
 
 test('break: when saving fails, the stage jumps back and the recruiter is told', async ({ page, applicant }) => {
-    // Only the PATCH for this candidate fails. Everything else reaches the real server.
-    await page.route(`**/api/applications/${applicant.id}`, async (route) => {
-        if (route.request().method() === 'PATCH') await route.fulfill({ status: 500, json: { error: 'internal' } });
-        else await route.fallback();
-    });
+    // every request to this candidate's address gets a 500: the page cannot save
+    await page.route(`**/api/applications/${applicant.id}`, (route) => route.fulfill({ status: 500 }));
     await page.goto(`/recruiter/candidates?q=${applicant.lastName}`);
     const row = page.getByRole('row', { name: applicant.name });
 
@@ -20,12 +18,11 @@ test('break: when saving fails, the stage jumps back and the recruiter is told',
 });
 
 test('patch: the real answer with one change shows the paging of a large customer', async ({ page }) => {
-    // route.fetch() gets the real response. The test changes two numbers and passes the rest on.
     // https://playwright.dev/docs/mock#modify-api-responses
     await page.route('**/api/candidates?*', async (route) => {
-        const response = await route.fetch();
+        const response = await route.fetch();          // the request goes to the real server
         const body = await response.json();
-        await route.fulfill({ response, json: { ...body, total: 1234, pages: 124 } });
+        await route.fulfill({ response, json: { ...body, total: 1234, pages: 124 } });   // the real answer, two numbers changed
     });
 
     await page.goto('/recruiter/candidates');
@@ -34,6 +31,8 @@ test('patch: the real answer with one change shows the paging of a large custome
     await expect(page.getByText('Page 1 of 124')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Next' })).toBeEnabled();
 });
+
+// Done early: two more tests. README.md describes them.
 
 test('spy: typing a name sends one search, not one per key', async ({ page, applicant }) => {
     const searches: string[] = [];
