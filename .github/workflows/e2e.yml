@@ -3,7 +3,6 @@
 #   a pull request       the gate: the tests tagged @smoke, and the visual comparison
 #   a push to main       everything: the suite in three shards, the visual comparison, every case folder
 #   every night          everything
-#   "Run workflow"       started by hand in the Actions tab, with a test filter or against another environment
 #
 # Every run ends with one report and a summary: on the page of the run, and as a comment on the pull request.
 # The sheet explains every line: labs/12-ci/README.md
@@ -15,15 +14,6 @@ on:
     branches: [main]
   schedule:
     - cron: '0 2 * * 1-5'                                 # 02:00 UTC, Monday to Friday
-  workflow_dispatch:                                      # the button "Run workflow"
-    inputs:
-      grep:
-        description: 'Only tests whose title or tag matches, for example: @smoke or salary'
-      base_url:
-        description: 'Run against this environment, for example: https://staging-3.example.com'
-      update_baselines:
-        description: 'Make the baseline images of the visual comparison again'
-        type: boolean
 
 # A new push to the same branch cancels the run that is still going: only the newest commit gets an answer.
 concurrency:
@@ -35,11 +25,11 @@ permissions:
   pull-requests: write                                    # the last job writes its summary on the pull request
 
 env:
-  # A pull request runs the tests tagged @smoke. "Run workflow" runs what its field "grep" says. Otherwise: everything.
-  GREP: ${{ github.event_name == 'pull_request' && '@smoke' || inputs.grep }}
-  # Empty: every machine starts its own application. Set: the suite runs against that address.
-  BASE_URL: ${{ inputs.base_url }}
-  # An account for that environment would come from the secrets of the repository:
+  # A pull request runs the tests tagged @smoke. Everything else runs everything.
+  SELECTION: ${{ github.event_name == 'pull_request' && '--grep @smoke' || '' }}
+  # Against a deployed environment, instead of the application each machine starts for itself:
+  #   BASE_URL: https://staging-3.example.com
+  #   E2E_ENV: '@staging-3'
   #   E2E_USER: ${{ secrets.E2E_USER }}
   #   E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
 
@@ -65,7 +55,7 @@ jobs:
       - name: Run shard ${{ matrix.shard }} of 3
         working-directory: solutions/12-ci
         # blob: the raw result of this shard, for the merge. github: failures as annotations on the run and the pull request.
-        run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob,github ${GREP:+--grep "$GREP"}
+        run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob,github $SELECTION
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}                           # also when tests failed: that is the report you need
         with:
@@ -73,9 +63,9 @@ jobs:
           path: blob-report
           retention-days: 1
 
-  # The visual comparison (solutions/17-visual) against baseline images that this job made itself.
+  # The visual comparison (solutions/17-visual) against the baseline images in the repository.
+  # They were made on this kind of machine, by the workflow in baselines.yml.
   visual:
-    if: ${{ !inputs.base_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
@@ -92,22 +82,17 @@ jobs:
         working-directory: solutions/17-visual
         env:
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-visual.zip
-        run: npx playwright test 1-screenshots --reporter=blob,github ${{ inputs.update_baselines && '--update-snapshots' || '' }}
+        run: npx playwright test 1-screenshots --reporter=blob,github
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}                           # the result has the images: expected, actual and the difference
         with:
           name: blob-report-visual
           path: blob-report
           retention-days: 1
-      - uses: actions/upload-artifact@v7
-        if: ${{ inputs.update_baselines }}                # new baselines: download them and commit them
-        with:
-          name: baselines
-          path: solutions/17-visual/tests/__screenshots__
 
   # Every case folder of the course, as it is: one machine per folder. Not for a pull request: the gate stays fast.
   cases:
-    if: ${{ github.event_name != 'pull_request' && !inputs.base_url && !inputs.grep }}
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:

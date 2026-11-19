@@ -69,9 +69,9 @@ command line: `--reporter=blob,github`.
 
 | Lines | What they do |
 |---|---|
-| `on:` | a pull request, a push to `main`, every night at 02:00 UTC, and the button "Run workflow" with its fields |
+| `on:` | a pull request, a push to `main`, and every night at 02:00 UTC |
 | `concurrency:` | a new push to the same branch cancels the run that is still going |
-| `GREP` | a pull request runs the tests tagged `@smoke`; "Run workflow" runs what its field `grep` says |
+| `SELECTION` | the one expression of the file: a pull request runs `--grep @smoke`, everything else runs everything |
 | `container:` | the Playwright image, with the browsers. Its tag is the version of `@playwright/test` in `package.json` |
 | `matrix: shard: [1, 2, 3]` | three machines; each runs `--shard=N/3` |
 | `fail-fast: false` | a failed shard does not cancel the other two |
@@ -111,8 +111,9 @@ A trace file on its own opens with `npx playwright show-trace trace.zip`, or in 
 (the file stays on your machine).
 
 **The baseline images of the pipeline** are in `solutions/17-visual/tests/__screenshots__/*-linux.png`. The pipeline
-made them itself: start the workflow by hand with `update_baselines`, download the artifact `baselines`, commit the
-images. A baseline belongs to one browser on one platform, so images from a Mac do not fit a Linux machine.
+made them itself: a baseline belongs to one browser on one platform, so images from a Mac do not fit a Linux machine.
+To make them again, start the second workflow by hand (`.github/workflows/baselines.yml`: tab Actions, "baselines",
+"Run workflow", or `gh workflow run baselines.yml`), download its artifact `baselines` and commit the images.
 
 ## 5 · Reproduce it
 
@@ -167,24 +168,18 @@ Green on the laptop and red in the pipeline: what differs.
 | Linux, headless, time zone UTC | fonts and pixels; a date that the test formats itself |
 | `CI` is set | a forgotten `test.only`; retries hide a flaky test unless `failOnFlakyTests` is on |
 
-## 6 · Selected tests, or another environment
-
-The button **Run workflow** (tab Actions, workflow "e2e") has two fields. The same from a terminal:
-
-```bash
-gh workflow run e2e.yml -f grep=salary                                            # only the tests that match, on a fresh application
-gh workflow run e2e.yml -f grep=@smoke -f base_url=https://staging-3.example.com  # the gate against that environment
-```
-
-With `base_url` the config starts no application (`BASE_URL`) and leaves out the tests tagged `@db`: they write to
-the database, which a test cannot reach on a deployed environment. The account comes from the environment: in the
-pipeline from the repository's secrets (`E2E_USER`, `E2E_PASSWORD`, the commented lines in `e2e.yml`). `E2E_ENV`
-puts the name of the environment as a tag on every test (`tag` in the config), so one merged report can hold the
-results of several environments. On a laptop:
+## 6 · Against another environment
 
 ```bash
 BASE_URL=https://staging-3.example.com E2E_ENV=@staging-3 E2E_USER=… E2E_PASSWORD=… npx playwright test --grep @smoke
+BASE_URL=http://localhost:3000 E2E_ENV=@staging-3 npx playwright test --grep @smoke     # to try it: your own application, by address. 7 passed
 ```
+
+With `BASE_URL` the config starts no application and leaves out the tests tagged `@db`: they write to the database,
+which a test cannot reach on a deployed environment. `E2E_ENV` puts the name of the environment as a tag on every
+test (`tag` in the config), so one merged report can hold the results of several environments. The account comes
+from the environment. In the pipeline all of them go into `env:` of `e2e.yml` (the commented lines there), the
+account from the repository's secrets.
 
 ## For your own repository
 

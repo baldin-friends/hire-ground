@@ -41,8 +41,8 @@ The pink bar is the mask over the closing date. The pixel count differs a little
 - Without `updateSnapshots: 'none'`, a first run writes the missing baselines and fails: nothing was compared.
 - Your own baselines stay on your machine (`.gitignore`): a Mac and a Windows laptop draw their own.
 - The baselines of the pipeline are in the repository: `tests/__screenshots__/*-linux.png`. The pipeline made them
-  itself, because a Mac and the Linux image draw text differently. To make them again: start the workflow by hand
-  with `update_baselines`, download the artifact `baselines`, commit the images. Case 8 shows it.
+  itself, because a Mac and the Linux image draw text differently. To make them again: start the workflow
+  `baselines` by hand (`.github/workflows/baselines.yml`), download its artifact, commit the images.
 - Before each screenshot Playwright stops CSS animations and waits until two screenshots in a row are equal.
 
 ## Read more
