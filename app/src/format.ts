@@ -15,7 +15,7 @@ export function formatDateTime(iso: string) {
 }
 
 export function formatSalary(min: number, max: number) {
-    const f = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+    const f = new Intl.NumberFormat('en-GB', { notation: 'compact' });
     return `${f.format(min)}–${f.format(max)} € per year`;
 }
 
