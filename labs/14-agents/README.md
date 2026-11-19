@@ -1,143 +1,120 @@
-# Case 10 · AI: what Playwright ships
+# Case 10 · AI and MCP
 
-Playwright 1.64.1 does not contain a language model. It contains everything a language model needs to work with
-tests: a prompt for every failure, three agent definitions (planner, generator, healer), an MCP server, and a
-command line for coding agents. This case shows what each part does, and what a person still has to decide.
+Playwright 1.64.1 contains no language model. It contains what a model needs to work in a test suite: a prompt for
+every failed test, an MCP server that gives an assistant a browser, and three agents that plan, generate and
+repair tests. Four demos show them at work, each with one prompt.
 
-**Time** 45 min · together on the projector
+**Time** 60 minutes · on the projector · the demos use Claude Code · every result is also in `solutions/14-agents`
 
-## What ships with 1.64.1
+## What is in this folder
 
-| Part | Command or place | Needs an AI account? |
-|---|---|---|
-| A prompt for every failed test | `test-results/<test>/error-context.md`; the button "Copy prompt" in the HTML report and in the trace viewer | no, to produce it; yes, to answer it |
-| Test agents: planner, generator, healer | `npx playwright init-agents --loop=claude` (or `vscode`, `copilot`, `codex`, `opencode`) | yes: Claude Code or Copilot runs them |
-| The MCP server of the test runner | `npx playwright run-test-mcp-server` (the agents start it themselves) | yes |
-| The browser MCP server | `npx playwright mcp` | yes: any MCP client |
-| A browser on the command line | `npx playwright cli open --browser=chromium <url>`, then `snapshot`, `click`, `fill` | no |
-| Skills for coding agents | `npx playwright init-skills` | yes |
-| A paused test an agent can attach to | `npx playwright test --debug=cli` | no |
-| A trace on the command line | `npx playwright trace open <trace.zip>`, then `actions`, `errors` | no |
+| File | What it is |
+|---|---|
+| `prompts/` | the prompts of demos 2, 3 and 4 |
+| `tests/heal-me.spec.ts` | two tests that fail: the material of demos 1 and 4 |
+| `tests/seed.spec.ts` | the seed test: the page where the planner and the generator start, signed in |
+| `specs/job-administration.plan.md` | a plan the planner wrote on 19 November 2026; a new run replaces it |
+| `.mcp.json` | two MCP servers: `playwright` (a browser) and `playwright-test` (the test runner, for the agents) |
+| `.claude/agents/` | planner, generator, healer: their instructions, in Markdown |
+| `.claude/settings.json` | what Claude Code may start and call in this folder without asking |
 
-Left out on purpose: the CLI lists `--run-agents` "to generate the code for page.perform". `page.perform` is not
-in the published types of 1.64.1, so this course does not use it.
+Two commands wrote the configuration. The first one replaces `.mcp.json`, so it runs first.
+
+```bash
+npx playwright init-agents --loop=claude
+claude mcp add -s project playwright -- npx playwright mcp --isolated --browser=chromium
+```
+
+- `--isolated`: the browser profile stays in memory. Every session starts signed out.
+- `--browser=chromium`: the Chromium that Playwright installed. Without it the server looks for Google Chrome.
+- To start signed in, add `--storage-state=playwright/.auth/recruiter.json`: the session the tests saved.
+- After a Playwright update, run `init-agents` again: the agent definitions belong to the version.
+
+With VS Code and Copilot: `npx playwright init-agents --loop=vscode` writes `.github/agents/` and
+`.vscode/mcp.json`. It needs VS Code 1.105 or later, with `labs/14-agents` opened as the folder.
 
 ## Before you start
 
 ```bash
-npx playwright test        # in labs/14-agents: 2 failed, 2 passed
+cd labs/14-agents
+npx playwright test        # 2 failed, 2 passed: the two failures are the material
 ```
 
-The two failures are the material. That run also signs in and saves the session; UI mode does not do that by itself.
+The application runs on port 3000. With another port, change the address in `prompts/write-a-test.md`.
 
-## Part 1 · What the model gets to see (no account needed)
+## Demo 1 · a failed test writes its own prompt
 
-1. Open the prompt of the first failure:
+No setup. You paste text, and the assistant needs no access to your code.
 
-   ```bash
-   cat ../../test-results/heal-me-a-recruiter-opens-the-form-for-a-new-job-chromium/error-context.md
-   ```
+1. `npx playwright show-report`, open the failed test "a recruiter opens the form for a new job".
+2. Click **Copy prompt** and paste it into an assistant.
 
-   It has five parts: instructions, the test, the error, the page as an aria snapshot, the source around the failing
-   line. Find the control the test was looking for in the snapshot. What is it, and what is it called?
+The prompt holds the error, the page as an aria snapshot, and the source around the failing line. The same text
+is a file next to the trace: `error-context.md` in the folder of the test under `test-results`. The trace viewer
+has the button too, in its Errors tab.
 
-2. Open the report, `npx playwright show-report`, open the failed test, click **Copy prompt**. It is the same text.
-   Paste it into Claude or Copilot.
-
-3. See the page the way an agent sees it, and act on it:
-
-   ```bash
-   npx playwright cli open --browser=chromium http://localhost:3000/jobs
-   npx playwright cli snapshot
-   npx playwright cli fill e19 "Reliability"      # e19: the ref of the search box in the snapshot
-   npx playwright cli click e20
-   npx playwright cli close
-   ```
-
-   Every action prints the Playwright code it ran, for example
-   `await page.getByRole('searchbox', { name: 'Search jobs' }).fill('Reliability');`
-   Without `--browser=chromium` the command looks for an installed Google Chrome.
-
-## Part 2 · The healer (run live, not rehearsed)
-
-The agents need Claude Code or VS Code with Copilot. What they answer differs from run to run.
+## Demo 2 · the assistant gets a browser
 
 ```bash
-npx playwright init-agents --loop=claude
+claude "$(cat prompts/write-a-test.md)"      # or: start claude and paste the file
 ```
 
-It prints what it writes (observed with 1.64.1):
+A Chromium window opens. The assistant signs in as Rita, rejects a candidate once, writes
+`tests/reject-a-candidate.spec.ts` with the `applicant` fixture, and runs it twice.
+The run of 19 November took four minutes and 23 calls to the browser.
 
+Read the result with Thursday's questions: whose data does it use, does it pass a second time, what does it
+assert, does it clean up?
+
+## Demo 3 · a plan, then a test from the plan
+
+```bash
+claude "$(cat prompts/plan.md)"              # about two minutes
+claude "$(cat prompts/generate.md)"          # about two minutes
 ```
- 🎭 Using project "chromium" as a primary project
- 🤖 .claude/agents/playwright-test-generator.md - agent definition
- 🤖 .claude/agents/playwright-test-healer.md - agent definition
- 🤖 .claude/agents/playwright-test-planner.md - agent definition
- 🔧 .mcp.json - mcp configuration
+
+The planner runs the seed test, explores the job administration and saves `specs/job-administration.plan.md`.
+The generator performs the first scenario in a browser and writes `tests/job-administration/save-draft.spec.ts`.
+
+Read the plan before a test is generated from it. The plan of 19 November expects "13 jobs" after saving:
+a count of all jobs. The test generated from it passed alone and failed next to the other tests of the folder.
+`solutions/14-agents` has that test with four review marks.
+
+## Demo 4 · heal, and what is left for a person
+
+Decide first, for each of the two failures: is the test wrong, or the application?
+
+```bash
+claude "$(cat prompts/heal.md)"              # about two minutes
+git diff tests/
 ```
 
-`specs/README.md` and `tests/seed.spec.ts` exist already, so it leaves them alone. With `--loop=vscode` the
-files are `.github/agents/*.agent.md` and `.vscode/mcp.json`; open `labs/14-agents` as the folder in VS Code then.
-Add `--prompts` and you also get four prompt templates in `.claude/prompts/`.
+| Test | What is wrong | The healer on 19 November, in two runs |
+|---|---|---|
+| a recruiter opens the form for a new job | the test: the button "Create job" is a link "New job" now | a new locator |
+| one person can apply for two jobs with the same e-mail address | the application: this build has a regression switched on (`unique-email`, see `tests/auth.setup.ts`) | `test.fixme()` and a comment that names the bug |
 
-Read `.claude/agents/playwright-test-healer.md` before you run it. Two sentences in it matter for what follows:
-"Fixing assertions and expected values" is on its list of repairs, and "do the most reasonable thing possible to
-pass the test".
+What the healer cannot do: file the bug. And `test.fixme()` skips the test, so nobody notices when the bug is
+fixed. `solutions/14-agents/tests/heal-me.spec.ts` uses `test.fail()` instead: the test still runs.
 
-Then start Claude Code in this folder (`claude`), allow the MCP server `playwright-test`, and ask:
+Put the folder back afterwards: `git checkout . && git clean -fd tests`
 
-> Use the playwright-test-healer agent. Run the tests in tests/heal-me.spec.ts and fix the failing ones.
+## Rules for a team
 
-Afterwards: `git diff tests/`.
+1. Your rules go into the prompt: the fixture, data of its own, role and name first.
+2. A generated plan or test goes through review, like any other code.
+3. A healer may change a locator or a wait. A changed expectation is a question to the team.
+4. An assistant drives a test system with test accounts, never a browser with real sign-ins. It acts with the
+   session its browser has, and it reads every page as text: a page can contain a sentence that reads like an
+   instruction.
 
-### The first test
-
-`a recruiter opens the form for a new job` looks for a button "Create job". The page has a link "New job".
-The test is out of date: a new locator is the right repair.
-
-### The second test
-
-`one person can apply for two jobs with the same e-mail address` fails because the application refuses the second
-application: "You have already applied with this email address." This build has a regression switched on
-(`unique-email`, see `tests/auth.setup.ts`): one address may apply only once across all jobs. The test is right.
-
-Look at what the healer did with it. Three things are possible:
-
-| What changed | Is it a fix? |
-|---|---|
-| the expectation: the test now expects the error message | No. The test is green and protects the bug. `solutions/14-agents/tests/healed-wrong.spec.ts` shows it. |
-| the test is marked `test.fixme()` with a comment | Half. The healer's instructions ask for this when it is sure the test is right. Somebody still has to file the bug. |
-| the setup: the line that switches the regression on is gone | No. The agent repaired the environment until the test passed. |
-
-## Part 3 · Planner and generator (run live, not rehearsed)
-
-> Use the playwright-test-planner agent. Create a test plan for the job administration. Seed file: tests/seed.spec.ts. Save it as specs/job-administration-ai.plan.md.
-
-> Use the playwright-test-generator agent. Generate the test for scenario 1.1 of specs/job-administration.plan.md.
-
-The planner opens the application through the seed test, explores it and writes a plan in Markdown. The generator
-performs one scenario in the browser and writes a test file. `specs/job-administration.plan.md` is a plan in the
-same layout, written by hand: use it if the planner is not available.
-
-Read the generated test with Thursday's questions: does it pass a second time? Whose data does it use? What does
-it assert? Does it clean up?
-
-## House rules
-
-1. A person reads every generated plan before a test is generated from it.
-2. A generated or repaired test goes through review, like any other code.
-3. A changed expectation is a question to the team, never a repair.
-4. Agents help while you write tests. They do not decide whether the pipeline is green.
-
-## Done when
-
-You can say for both failing tests whether the test or the application was wrong, and
-`npx playwright test` in `solutions/14-agents` passes.
+Every step sends a snapshot of the page to the model. A narrow task with a starting page costs less than
+"test the application".
 
 ## Read more
 
 - Test agents: <https://playwright.dev/docs/test-agents>
-- Playwright MCP: <https://playwright.dev/mcp/introduction>
+- Playwright MCP: <https://playwright.dev/mcp/introduction> · snapshots: <https://playwright.dev/mcp/snapshots>
 - Playwright CLI for coding agents: <https://playwright.dev/agent-cli/introduction>
 - Annotations, `test.fail()` and `test.fixme()`: <https://playwright.dev/docs/test-annotations>
-- Timeouts, `actionTimeout`: <https://playwright.dev/docs/test-timeouts>
+- An assistant in the migration from Selenide: `labs/13-migration`

@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": ["playwright", "playwright-test"],
+  "permissions": {
+    "allow": ["mcp__playwright", "mcp__playwright-test", "Bash(npx playwright test:*)"]
+  }
+}

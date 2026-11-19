@@ -1,6 +1,7 @@
-# what `npx playwright init-agents` and `init-skills` write into this folder
-.claude/
-.mcp.json
+# written while an assistant works in this folder
+.playwright-mcp/
+.playwright-cli/
+.claude/settings.local.json
+# what `npx playwright init-agents --loop=vscode` writes (the files for Claude Code are in the repository)
 .github/
 .vscode/
-.playwright-cli/
