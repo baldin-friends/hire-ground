@@ -31,7 +31,7 @@ Recruiter sign-in: `rita.recruiter@hireground.test` / `hire-ground`
 | `solutions/` | the same folders, finished |
 | `support/` | fixtures that several cases share: written in Case 4 |
 | `app/` | Hire Ground, the application under test. `app/README.md` lists its pages, its API, and what is hard to test |
-| `handouts/` | pages to keep open: the survival card, the checklists of the course, structure and config, TypeScript, Selenide to Playwright |
+| `handouts/` | pages to keep open, each as Markdown and as PDF: the survival card, the checklists of the course, structure and config, TypeScript, UI components, Selenide to Playwright |
 | `.github/workflows/e2e.yml` | the pipeline of this repository: it runs `solutions/12-ci` on GitHub Actions |
 | `.github/workflows/e2e-extended.yml` | to explore: the same pipeline with nine numbered additions. It runs only when started by hand |
 | `compose.yaml` | optional: the pipeline's image on your laptop, `docker compose run --rm ci` |
