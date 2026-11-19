@@ -83,15 +83,20 @@ the three machines.
 
 ## 4 · A failed run
 
-1. Open the run on GitHub (from the pull request: **Details** on a failed check, then **Summary**). It lists the
-   jobs, the **annotations** (test, file, line, error) and the **artifacts**.
-2. Download the artifact `html-report--attempt-1`, in the browser or with the GitHub CLI:
+1. Open the repository on GitHub, click the tab **Actions**, then the run with the red cross. You are on the page
+   of the run, and **Summary** is selected on the left. Read it in this order: the jobs (which shard failed), the
+   **annotations** (test, file, line, error), the **artifacts** at the bottom.
+2. Download the artifact `html-report--attempt-1`.
+
+   With the GitHub CLI, in the repository root. The id of a run is the number at the end of its address:
 
    ```bash
-   gh run list --limit 5                       # the runs and their ids
    gh run download <id> --name html-report--attempt-1 --dir red-report
    npx playwright show-report red-report
    ```
+
+   Without it: click the name of the artifact on the page of the run (that needs a GitHub sign-in), unzip the
+   file, and run `npx playwright show-report <folder>`.
 
 3. In the report: open the failed test. It has a screenshot of the page at the moment of the failure, and a tab for
    every attempt. "Retry #1" has the trace: the step that failed, and the page as it was.
