@@ -12,7 +12,8 @@
     "preflight": "node scripts/preflight.mjs",
     "app": "npm --prefix app start",
     "app:dev": "npm --prefix app run dev",
-    "reset": "node scripts/reset.mjs"
+    "reset": "node scripts/reset.mjs",
+    "report": "node scripts/report.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

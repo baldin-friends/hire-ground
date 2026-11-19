@@ -1,11 +1,11 @@
-# The pipeline of this repository. It runs the suite of Case 8 (solutions/12-ci): Hire Ground and the tests of Cases 1 to 6.
+# The pipeline of this repository.
 #
-#   a pull request       the gate: only the tests tagged @smoke
-#   a push to main       everything
+#   a pull request       the gate: the tests tagged @smoke, and the visual comparison
+#   a push to main       everything: the suite in three shards, the visual comparison, every case folder
 #   every night          everything
-#   "Run workflow"       everything, started by hand in the Actions tab
+#   "Run workflow"       started by hand in the Actions tab, with a test filter or against another environment
 #
-# Three machines run one shard each. A fourth job merges their results into one HTML report.
+# Every run ends with one report and a summary: on the page of the run, and as a comment on the pull request.
 # The sheet explains every line: labs/12-ci/README.md
 # https://playwright.dev/docs/ci · https://playwright.dev/docs/test-sharding#github-actions-example
 name: e2e
@@ -15,22 +15,36 @@ on:
     branches: [main]
   schedule:
     - cron: '0 2 * * 1-5'                                 # 02:00 UTC, Monday to Friday
-  workflow_dispatch:
+  workflow_dispatch:                                      # the button "Run workflow"
+    inputs:
+      grep:
+        description: 'Only tests whose title or tag matches, for example: @smoke or salary'
+      base_url:
+        description: 'Run against this environment, for example: https://staging-3.example.com'
+      update_baselines:
+        description: 'Make the baseline images of the visual comparison again'
+        type: boolean
 
 # A new push to the same branch cancels the run that is still going: only the newest commit gets an answer.
 concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write                                    # the last job writes its summary on the pull request
+
 env:
-  # The gate is fast because it runs a selection, not because the machines are faster.
-  SELECTION: ${{ github.event_name == 'pull_request' && '--grep @smoke' || '' }}
-  # Against a deployed environment, instead of the application each machine starts for itself:
-  #   BASE_URL: https://staging.example.com
+  # A pull request runs the tests tagged @smoke. "Run workflow" runs what its field "grep" says. Otherwise: everything.
+  GREP: ${{ github.event_name == 'pull_request' && '@smoke' || inputs.grep }}
+  # Empty: every machine starts its own application. Set: the suite runs against that address.
+  BASE_URL: ${{ inputs.base_url }}
+  # An account for that environment would come from the secrets of the repository:
   #   E2E_USER: ${{ secrets.E2E_USER }}
   #   E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
 
 jobs:
+  # The suite of Case 8 (solutions/12-ci), cut into three shards.
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -38,7 +52,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.64.1-noble   # = the @playwright/test version in package.json
       options: --user 1001
     strategy:
-      fail-fast: false                                    # a red shard does not cancel the others
+      fail-fast: false                                    # a failed shard does not cancel the others
       matrix:
         shard: [1, 2, 3]
     steps:
@@ -51,7 +65,7 @@ jobs:
       - name: Run shard ${{ matrix.shard }} of 3
         working-directory: solutions/12-ci
         # blob: the raw result of this shard, for the merge. github: failures as annotations on the run and the pull request.
-        run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob,github $SELECTION
+        run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob,github ${GREP:+--grep "$GREP"}
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}                           # also when tests failed: that is the report you need
         with:
@@ -59,9 +73,71 @@ jobs:
           path: blob-report
           retention-days: 1
 
-  merge-reports:
-    if: ${{ !cancelled() }}                               # also when a shard was red
-    needs: [tests]
+  # The visual comparison (solutions/17-visual) against baseline images that this job made itself.
+  visual:
+    if: ${{ !inputs.base_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix app
+      - name: Compare the pages with their baseline images
+        working-directory: solutions/17-visual
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-visual.zip
+        run: npx playwright test 1-screenshots --reporter=blob,github ${{ inputs.update_baselines && '--update-snapshots' || '' }}
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}                           # the result has the images: expected, actual and the difference
+        with:
+          name: blob-report-visual
+          path: blob-report
+          retention-days: 1
+      - uses: actions/upload-artifact@v7
+        if: ${{ inputs.update_baselines }}                # new baselines: download them and commit them
+        with:
+          name: baselines
+          path: solutions/17-visual/tests/__screenshots__
+
+  # Every case folder of the course, as it is: one machine per folder. Not for a pull request: the gate stays fast.
+  cases:
+    if: ${{ github.event_name != 'pull_request' && !inputs.base_url && !inputs.grep }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
+    strategy:
+      fail-fast: false
+      matrix:
+        folder: [02-setup, 03-locators, 04-forms, 05-tools, 06-locators, 07-assertions, 08-data, 09-network, 10-time, 11-parallel, 13-migration, 14-agents]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix app
+      - name: Run the tests of solutions/${{ matrix.folder }}
+        working-directory: solutions/${{ matrix.folder }}
+        run: npx playwright test --reporter=github,html --grep-invert @fails-on-purpose
+      - uses: actions/upload-artifact@v7
+        if: ${{ failure() }}
+        with:
+          name: report-case-${{ matrix.folder }}
+          path: playwright-report
+          retention-days: 14
+
+  # One report for the whole run: the three shards and the visual comparison, merged. And a summary of it.
+  report:
+    if: ${{ !cancelled() }}                               # also when a shard failed
+    needs: [tests, visual]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -74,9 +150,16 @@ jobs:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
-      - run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - run: npx playwright merge-reports -c solutions/12-ci/merge.config.ts ./all-blob-reports
       - uses: actions/upload-artifact@v7
         with:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report
           retention-days: 14
+      - name: Write the summary on the page of the run
+        run: node scripts/ci-summary.mjs solutions/12-ci/results.json ${{ github.run_id }} | tee summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Write the summary on the pull request
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file summary.md

@@ -10,6 +10,8 @@ export default defineConfig({
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
     reporter: [['list'], ['html', { open: 'never' }]],
+    // every test of this folder carries this tag in a report: in the merged report of the pipeline they are easy to find
+    tag: '@visual',
 
     // A baseline is written only when you ask for it: --update-snapshots
     updateSnapshots: 'none',
