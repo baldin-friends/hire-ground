@@ -18,17 +18,19 @@ Folders: `labs/05-tools`, `06-locators`, `07-assertions`, `08-data`.
 2. Does the test reset or delete data that other tests use?
 3. Does it count or list everything, where it means its own record?
 4. Does it change a fixed record that other tests use: a seed candidate, a shared account?
-5. The repair: data of its own, created and removed by a fixture.
+5. The way out: no shared data. Every test creates and removes its own, through a fixture. A test that must see
+   everything runs alone.
 6. Retries hide the problem. `--fail-on-flaky-tests` turns a flaky run into a failed run.
 
 Folder: `solutions/11-parallel` (`1-flaky`, `2-fixed`).
 
 ## CI/CD · Case 8
 
-- One config for the pipeline, a laptop with `CI=1` and the Docker image.
-- A pull request runs the `@smoke` tests. Everything runs after the merge.
-- A failed run: read the annotations, download the report, open the trace. Then reproduce.
-- Every shard uploads its result, also after a failure.
+1. One config for the laptop and the pipeline. `CI` switches five settings.
+2. A pull request runs the `@smoke` tests. Everything runs after the merge.
+3. Shards make it faster. One job merges their results into one report.
+4. A failed run: read the annotations, download the report, open the trace.
+5. Reproduce in steps: the one test, repeated, like the pipeline, in the image.
 
 Passes on the laptop, fails in the pipeline? Check:
 
@@ -53,11 +55,10 @@ Files: `.github/workflows/e2e.yml`, `solutions/12-ci`, `compose.yaml`, the sheet
 ## Migrating from Selenide · Case 9
 
 - Sort before you port: delete what nobody would miss, move rules and calculations down to API tests, port the journeys.
-- The ground first: the sign-in, fixtures for your data, one green job in the pipeline, next to the Selenide job.
-- From a date you set, new tests are written in Playwright only.
+- The ground first: the sign-in, fixtures for your data, one green job in the pipeline.
 - One pull request moves one area: it adds the Playwright tests and deletes the Selenide classes of that area.
-- A test is rewritten from what it proves. An area is done when it is green with `--repeat-each=5 --workers=4` and
-  every test creates its own data.
+- A test is rewritten from what it proves. It is done when it passes with `--repeat-each=5 --workers=4` and creates
+  its own data.
 - An assistant gets your rules file and may run the tests. A person reviews what it wrote.
 
 Files: `handouts/selenide-to-playwright.md`, `labs/13-migration/migration-rules.md`.
@@ -65,11 +66,10 @@ Files: `handouts/selenide-to-playwright.md`, `labs/13-migration/migration-rules.
 ## AI in a test suite · Case 10
 
 1. Put your rules into the prompt: the fixture, data of its own, role and name first.
-2. Review a generated plan or test like any other code. Run it next to the other tests.
+2. Review a generated test like any other code. Run it next to the other tests.
 3. Let a healer change a locator or a wait. A changed expectation is a question to the team.
-4. Mark a red test that is right with `test.fail()` and the reason. `test.fixme()` skips it, and nobody notices
+4. Mark a failing test that is right with `test.fail()` and the reason. `test.fixme()` skips it, and nobody notices
    when the bug is gone.
 5. Point an assistant at a test system with test accounts, never at a browser with real sign-ins.
-6. Give it a narrow task with a starting page. Every step sends a snapshot to the model.
 
 Folder: `labs/14-agents` (`.mcp.json`, `prompts/`).

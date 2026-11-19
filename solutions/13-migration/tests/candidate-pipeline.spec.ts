@@ -3,7 +3,6 @@ import { test, expect } from '../../../support/fixtures';
 
 // CandidatePipelineTest.java, rewritten instead of translated.
 // The Java source: labs/13-migration/selenide/src/test/java/hireground/CandidatePipelineTest.java
-// The line-by-line translation: labs/13-migration/tests/candidate-pipeline.spec.ts
 //
 // What changed:
 //   - Three tests in a fixed order became two tests that do not know each other.
@@ -12,7 +11,7 @@ import { test, expect } from '../../../support/fixtures';
 //   - No sleep. Assertions wait for the page; expect.poll waits for the mail.
 //   - Role and label where the markup has them. The stage dropdown has none: CSS, scoped to the row.
 //
-// Run it:  npx playwright test candidate-pipeline --repeat-each=3 --workers=3
+// Run it:  npx playwright test candidate-pipeline.spec --repeat-each=3 --workers=3
 
 const CV = { name: 'cv.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF\n') };
 

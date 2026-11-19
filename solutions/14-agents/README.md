@@ -1,22 +1,17 @@
 # Case 10 · AI and MCP: what came out
 
-The results of the four demos, from the runs of 19 November 2026 with Claude Code and Playwright 1.64.1.
+The results of the three demos, from the runs of 19 November 2026 with Claude Code and Playwright 1.64.1.
 A new run gives other words and, now and then, other code.
 
 ```bash
 cd solutions/14-agents
-npx playwright test        # 7 passed
+npx playwright test        # 4 passed. One line has a cross: the test marked test.fail()
 ```
 
 | File | Where it comes from |
 |---|---|
 | `tests/reject-a-candidate.spec.ts` | demo 2: written by the assistant with the MCP server, not edited |
-| `tests/job-administration/save-draft.spec.ts` | demo 3: written by the generator agent, then reviewed by a person: four marks `review:` |
-| `tests/heal-me.spec.ts` | demo 4, after a person decided: test 1 has the healer's new locator, test 2 is marked `test.fail()` |
-| `tests/healed-wrong.spec.ts` | written by hand: the repair to look for in a diff, a changed expectation. It passes. Do not copy it. |
-| `tests/seed.spec.ts`, `tests/auth.setup.ts` | as in `labs/14-agents` |
-
-The plan the generator worked from is in `labs/14-agents/specs/job-administration.plan.md`.
+| `tests/heal-me.spec.ts` | demo 3, after a person decided: test 1 has the healer's new locator, test 2 is marked `test.fail()` |
 
 ## Demo 1 · the answer to "Copy prompt"
 
@@ -28,7 +23,7 @@ The fix it proposed: `await page.getByRole('link', { name: 'New job' }).click();
 
 ## Demo 2 · what the assistant found hard to test
 
-Its own three lines, at the end of a run of four minutes and 23 calls to the browser:
+Its own three lines, at the end of a run of four minutes:
 
 > 1. The reject button has no name: icon only, no text, `aria-label`, title or test id, so the locator depends on
 >    the icon's sprite id.
@@ -38,21 +33,7 @@ Its own three lines, at the end of a run of four minutes and 23 calls to the bro
 
 These are the findings of Case 2. The fix is in the component, not in the test.
 
-## Demo 3 · the generated test, and four review marks
-
-As generated, `save-draft.spec.ts` passed twice in a row when it ran alone.
-Next to the other tests of this folder it failed, and every failed run left a draft job behind.
-
-| In the generated test | Why it goes |
-|---|---|
-| `'13 jobs'` and `'12 jobs'` | a count of all jobs: wrong as soon as another test creates a job at the same time |
-| "listed first": `getByRole('row').nth(1)` | holds only until another test creates the next job |
-| the deadline `'2026-12-31'` | the application refuses a deadline in the past: the test would fail from 1 January 2027 on |
-
-Still open, and marked in the file: the job is deleted in the last step, so a run that fails before it leaves
-a draft behind. A fixture would delete it in every case.
-
-## Demo 4 · the healer's diff
+## Demo 3 · the healer's diff
 
 ```diff
 -    await page.getByRole('button', { name: 'Create job' }).click();
@@ -68,6 +49,8 @@ a draft behind. A fixture would delete it in every case.
 
 Two runs ended this way: the locator repaired, the second test skipped with a comment, the expectation untouched.
 
-Why this folder uses `test.fail()` and not `test.fixme()`: a `fixme` test is skipped, so nobody notices when the
-bug is fixed. A test marked `fail` still runs. The day the application accepts the second application it passes
-unexpectedly and the run turns red: the reminder to remove the mark.
+## The second test
+
+This folder marks it `test.fail()`, not `test.fixme()`. A `fixme` test is skipped, so nobody notices when the bug
+is fixed. A test marked `fail` still runs. The day the application accepts the second application, the test
+passes unexpectedly and the run fails: the reminder to remove the mark.
