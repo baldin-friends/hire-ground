@@ -41,7 +41,8 @@ Run it, read the failure, repair that line, run it again. After each repair the 
 4. The button "Shortlist" does not exist under that name. What does **Pick locator** suggest, and would you keep that?
 5. Lea Neumann is not found: the search still shows Felix, and she is on page 4. Search for her. Then "Reject":
    the same as step 4. The dialog after it has a role and a name.
-6. Move the dropdown into a function `selectStage(row, stage)` and the search into `candidateRow(page, name)`.
+6. Below the test are two empty functions. Fill them in: `selectStage(row, stage)` gets the two dropdown clicks,
+   `candidateRow(page, name)` the search. Then use them in the test.
 
 Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
 

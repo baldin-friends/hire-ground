@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 
 test.beforeEach(async ({ request }) => {
     await request.post('/api/test/reset'); // a fresh database for every test; case 4 gets rid of this
@@ -37,6 +37,18 @@ test('work through the candidates table', async ({ page }) => {
     await expect(page.getByText('Lea Neumann rejected.')).toBeVisible();
 });
 
+// Step 6 · two functions to fill in, once the test is green. Then use them in the test.
+
+/** The row of one candidate: search for the name, wait for "1 candidate", return the row. */
+async function candidateRow(page: Page, name: string): Promise<Locator> {
+    throw new Error('candidateRow is not written yet: step 6');
+}
+
+/** The stage dropdown of one row: click the trigger in the row, then the option in the panel. */
+async function selectStage(row: Locator, stage: string) {
+    // not written yet: step 6
+}
+
 // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // The steps of the challenge as code, ready to copy. Try each step yourself first.
 // To use a piece: copy its lines to the place named, select them, and remove the comment (Cmd+/ or Ctrl+/).
@@ -71,19 +83,14 @@ test('work through the candidates table', async ({ page }) => {
 //     await page.getByRole('dialog', { name: 'Reject Lea Neumann?' }).getByRole('button', { name: 'Reject' }).click();
 // Run it: green.
 //
-// Step 6 · one function knows the dropdown, one knows how to find a row. In line 1, the import becomes:
-// import { test, expect, type Locator, type Page } from '@playwright/test';
-// Above the test:
-// async function candidateRow(page: Page, name: string): Promise<Locator> {
+// Step 6 · one function knows the dropdown, one knows how to find a row. Fill in the two empty functions
+// below the test. The body of candidateRow, instead of its throw line:
 //     await page.getByLabel('Search').fill(name);
 //     await expect(page.getByText('1 candidate', { exact: true })).toBeVisible();
 //     return page.getByTestId('candidate-row').filter({ hasText: name });
-// }
-//
-// async function selectStage(row: Locator, stage: string) {
+// The body of selectStage:
 //     await row.locator('.hg-select__trigger').click();
 //     await row.page().locator('.hg-select__panel').getByText(stage, { exact: true }).click();
-// }
 // and in the test, instead of the search lines, the row lines and the two dropdown lines:
 //     const felix = await candidateRow(page, 'Felix Wagner');
 //     await selectStage(felix, 'Screening');
