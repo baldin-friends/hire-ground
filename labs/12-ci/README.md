@@ -113,15 +113,21 @@ the three machines.
 notation, "60K–76K € per year".
 
 ```bash
-git apply labs/12-ci/red-run.patch                    # in the repository root
-cd solutions/12-ci
+cd solutions/12-ci                                    # from the repository root. Every step below runs here
+git -C ../.. apply labs/12-ci/red-run.patch           # the change. -C ../.. : git works in the repository root, two folders up
+git diff                                              # one changed line in app/src/format.ts. Leave with q
 CI=1 PORT=3001 npx playwright test --grep @smoke      # as the pipeline runs it: 2 failed, 5 passed, after about 40 seconds
 npx playwright show-report                            # the failed test: the screenshot, the tab "Retry #1" with the trace
-cd ../..
-git apply -R labs/12-ci/red-run.patch                 # take the change back
-cd solutions/12-ci
+git -C ../.. apply -R labs/12-ci/red-run.patch        # take the change back
 CI=1 PORT=3001 npx playwright test --grep @smoke      # 7 passed. This run also builds the application again, without the change
 ```
+
+| You see | It means |
+|---|---|
+| `Invalid URL`, and 3 tests instead of 7 | you are in the repository root: `cd solutions/12-ci` |
+| `No tests found` | you are in `labs/12-ci`, which holds only this sheet and the patch |
+| `error: … app/src/format.ts: No such file or directory` | `git apply` without `-C ../..` in a sub-folder: a patch is applied from the repository root |
+| `error: patch failed: app/src/format.ts` | the change is applied already |
 
 With `CI` the run builds and starts its own application, here on port 3001, and stops it afterwards.
 
