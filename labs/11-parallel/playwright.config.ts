@@ -9,7 +9,7 @@ process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS ?? ''} --disable-warning=
 // https://playwright.dev/docs/test-parallel
 export default defineConfig({
     testDir: './tests',
-    // also the tests inside one file run in parallel; without it only files do
+    // every test can go to any worker; without it only files run in parallel
     fullyParallel: true,
     // workers: the default is half of the logical CPU cores. On the command line: --workers=1, --workers=4
     forbidOnly: !!process.env.CI,
@@ -28,7 +28,13 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/recruiter.json' },
             dependencies: ['setup'],
         },
-        // tests/auth.setup.ts: runs once per run, before the tests
+        // A second browser: every test runs in both, at the same time, against the same database.
+        {
+            name: 'firefox',
+            use: { ...devices['Desktop Firefox'], storageState: 'playwright/.auth/recruiter.json' },
+            dependencies: ['setup'],
+        },
+        // signs in once and saves the session: https://playwright.dev/docs/auth
         { name: 'setup', testMatch: /.*\.setup\.ts/ },
     ],
     webServer: {
