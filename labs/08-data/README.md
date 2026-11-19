@@ -52,6 +52,19 @@ deleted after it. Run the file twice. Then read the fixture, it is three lines: 
 
 Every step is at the end of `tests/2-challenge.spec.ts` as a comment, ready to copy.
 
+## In two browsers at once
+
+`solutions/08-data/playwright.config.ts` has one more project, `firefox`. Every test runs in both browsers, at the
+same time, against the same database:
+
+```bash
+cd solutions/08-data
+npx playwright test --workers=4      # 13 passed, and the job list has twelve jobs afterwards
+```
+
+It works because each test changes only the rows it created, in the database too. The two tests the challenge
+started with would fail in the second browser: for shared data, a second browser is a second run.
+
 ## Hints
 
 <details>

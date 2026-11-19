@@ -28,7 +28,7 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/recruiter.json' },
             dependencies: ['setup'],
         },
-        // puts the database back to its seed and signs in as Rita, once per run
+        // tests/auth.setup.ts: runs once per run, before the tests
         { name: 'setup', testMatch: /.*\.setup\.ts/ },
     ],
     webServer: {

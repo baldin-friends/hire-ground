@@ -1,9 +1,8 @@
 import { test as setup, expect } from '@playwright/test';
 
-// Once per run: the database goes back to its seed, and Rita signs in.
-// The reset is the reason this suite is green with one worker. A staging system has no such button,
-// and two people who run the suite at the same time reset each other.
-setup('reset the data and sign in as recruiter', async ({ request }) => {
+// Once per run, before the tests: Rita signs in, and the session is saved for every test.
+setup('sign in as recruiter', async ({ request }) => {
+    // The reset is the reason this suite is green with one worker. Step 5 deletes these three lines.
     const reset = await request.post('/api/test/reset');
     expect(reset.ok(), 'the reset request').toBeTruthy();
 

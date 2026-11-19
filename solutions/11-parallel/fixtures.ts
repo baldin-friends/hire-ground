@@ -8,7 +8,6 @@ import { openDatabase, type Database } from '../../support/db';
 
 export type Job = { id: string; slug: string; title: string };
 export type Applicant = { id: string; reference: string; firstName: string; lastName: string; name: string; email: string };
-export type Account = { email: string; name: string };
 
 type TestFixtures = {
     /** A published job that belongs to this test alone. */
@@ -19,50 +18,14 @@ type TestFixtures = {
 type WorkerFixtures = {
     /** The application's database, for the few things no API can do. One connection per worker. */
     db: Database;
-    /** The recruiter account of this worker: recruiter-1 for the first worker, recruiter-2 for the second, … */
-    account: Account;
-    /** The signed-in session of `account`: cookies, as storageState() returns them. */
-    accountState: Awaited<ReturnType<import('@playwright/test').APIRequestContext['storageState']>>;
 };
 
 /** A date as YYYY-MM-DD, n days from today. A fixed date in a test is a failure with a start date. */
 export const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
 const CV = { name: 'cv.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF\n') };
-const ACCOUNTS = 8; // recruiter-1 … recruiter-8@hireground.test
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
-    // ---- new today: one account per worker
-    // https://playwright.dev/docs/auth#moderate-one-account-per-parallel-worker
-
-    account: [
-        async ({}, use, workerInfo) => {
-            // parallelIndex is 0 … workers-1, and a worker that restarts after a failure keeps its number.
-            const n = workerInfo.parallelIndex + 1;
-            if (n > ACCOUNTS) throw new Error(`There are ${ACCOUNTS} recruiter accounts: run with --workers=${ACCOUNTS} or fewer.`);
-            await use({ email: `recruiter-${n}@hireground.test`, name: `Recruiter ${n}` });
-        },
-        { scope: 'worker' },
-    ],
-
-    // Signs in once per worker, through the API, and keeps the session in memory.
-    accountState: [
-        async ({ playwright, account }, use, workerInfo) => {
-            const api = await playwright.request.newContext({ baseURL: workerInfo.project.use.baseURL });
-            const response = await api.post('/api/auth/login', { data: { email: account.email, password: 'hire-ground' } });
-            expect(response.ok(), `sign-in of ${account.email}`).toBeTruthy();
-            const state = await api.storageState();
-            await api.dispose();
-            await use(state);
-        },
-        { scope: 'worker' },
-    ],
-
-    // Every page and every `request` of a test starts with the session of this worker's account.
-    storageState: ({ accountState }, use) => use(accountState),
-
-    // ---- from case 4: data per test
-
     job: async ({ request }, use) => {
         // setup: everything before use()
         const response = await request.post('/api/jobs', {

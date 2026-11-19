@@ -26,6 +26,12 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/recruiter.json' },
             dependencies: ['setup'],
         },
+        // A second browser: every test runs in both, at the same time, against the same database.
+        {
+            name: 'firefox',
+            use: { ...devices['Desktop Firefox'], storageState: 'playwright/.auth/recruiter.json' },
+            dependencies: ['setup'],
+        },
         // signs in once and saves the session: https://playwright.dev/docs/auth
         { name: 'setup', testMatch: /.*\.setup\.ts/ },
     ],

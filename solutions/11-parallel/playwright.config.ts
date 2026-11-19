@@ -13,21 +13,23 @@ export default defineConfig({
     fullyParallel: true,
     // workers: the default is half of the logical CPU cores. On the command line: --workers=1, --workers=4
     forbidOnly: !!process.env.CI,
-    // A retry shows that a test is flaky; it does not repair it. https://playwright.dev/docs/test-retries
     retries: process.env.CI ? 2 : 0,
-    // on CI a test that passes only on a retry fails the run: https://playwright.dev/docs/api/class-testconfig#test-config-fail-on-flaky-tests
-    failOnFlakyTests: !!process.env.CI,
     reporter: [['list'], ['html', { open: 'never' }]],
     use: {
         baseURL: `http://localhost:${PORT}`,
         locale: 'de-DE',
         timezoneId: 'Europe/Berlin',
-        // a trace of the retry, so that a flaky test leaves evidence
-        trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
+        trace: 'retain-on-failure',
     },
     projects: [
-        // No setup project any more: no reset, and every worker signs in with its own account (fixtures.ts).
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+        // The browser project comes first: UI mode shows the first project when it opens.
+        {
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/recruiter.json' },
+            dependencies: ['setup'],
+        },
+        // tests/auth.setup.ts: runs once per run, before the tests
+        { name: 'setup', testMatch: /.*\.setup\.ts/ },
     ],
     webServer: {
         command: 'npm --prefix ../../app start',
