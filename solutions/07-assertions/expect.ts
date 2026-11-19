@@ -1,16 +1,18 @@
-import { expect as baseExpect, type APIRequestContext, type Locator } from '@playwright/test';
+import { expect as baseExpect, type Locator } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test'; // for toHaveMail
 
 export { test } from '@playwright/test';
 
 // Custom matchers: https://playwright.dev/docs/test-assertions#add-custom-matchers-using-expectextend
-// A matcher of your own is worth it when the same question comes up in many tests and the built-in
-// answer needs knowledge about the markup ("the stage is the text of .hg-select__value").
+//
+// Step 4 of the challenge: write toHaveStage, so that a test can say
+//
+//     await expect(row).toHaveStage('Interview');
+//
+// A matcher is a function that gets the value from expect(...) first, then the arguments.
+// It returns { pass, message, name, expected, actual }.
 
 export const expect = baseExpect.extend({
-    /**
-     * await expect(row).toHaveStage('Interview')
-     * The candidate row shows this stage. It waits and retries, because it is built on a web-first assertion.
-     */
     async toHaveStage(row: Locator, expected: string, options?: { timeout?: number }) {
         const assertionName = 'toHaveStage';
         const value = row.locator('.hg-select__value');
@@ -36,6 +38,7 @@ export const expect = baseExpect.extend({
         return { message, pass, name: assertionName, expected, actual: matcherResult?.actual };
     },
 
+    // Done early: a matcher for the mailbox
     /**
      * await expect(request).toHaveMail('ada@example.com', 'Invitation to an interview: …')
      * A mail with this subject has arrived. Mail is sent by a queue, so the matcher asks the mailbox
