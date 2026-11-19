@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 /**
- * The challenge: one candidate, from the application to the interview.
+ * One candidate, from the application to the interview.
  * Three tests, and each one needs the one before it.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

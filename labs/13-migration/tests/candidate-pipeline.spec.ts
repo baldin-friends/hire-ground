@@ -1,12 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 
-// The challenge: CandidatePipelineTest.java, translated line by line. This is the starting point, not the goal.
+// CandidatePipelineTest.java, translated line by line. Every habit of the Selenide class came along.
 // The Java source: selenide/src/test/java/hireground/CandidatePipelineTest.java
+// The rewrite: solutions/13-migration/tests/candidate-pipeline.spec.ts
 //
-// Run it twice:  npx playwright test 2-challenge
-// The first run passes (after `npm run reset` in the repository root). The second run fails in test 1,
-// and tests 2 and 3 do not run. Why? Then rewrite it: the steps are in README.md.
+// Run it twice:  npx playwright test candidate-pipeline
+// The first run passes. The second run fails in test 1, and tests 2 and 3 do not run.
+// Before the first run, once:  npm run reset --prefix ../..   (the fixed candidate may exist already)
 
 const CV = fileURLToPath(new URL('../selenide/src/test/resources/cv.pdf', import.meta.url));
 

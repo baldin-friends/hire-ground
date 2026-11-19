@@ -2,17 +2,17 @@ import { randomUUID } from 'node:crypto';
 import { test, expect } from '../../../support/fixtures';
 
 // CandidatePipelineTest.java, rewritten instead of translated.
+// The Java source: labs/13-migration/selenide/src/test/java/hireground/CandidatePipelineTest.java
+// The line-by-line translation: labs/13-migration/tests/candidate-pipeline.spec.ts
 //
-// What changed, and why:
-//   - Three tests in a fixed order became two tests that do not know each other. Each one runs alone,
-//     in any order, on any worker, as often as you like.
+// What changed:
+//   - Three tests in a fixed order became two tests that do not know each other.
 //   - No fixed candidate. Test 1 types a new e-mail address; test 2 gets its candidate from a fixture, through the API.
-//     Only the form under test is driven through the browser.
-//   - No sign-in through the form: the session comes from tests/auth.setup.ts and playwright.config.ts.
+//   - No sign-in through the form: the session comes from tests/auth.setup.ts.
 //   - No sleep. Assertions wait for the page; expect.poll waits for the mail.
-//   - Locators by role and label where the markup has them. The stage dropdown has none: CSS, scoped to the row.
+//   - Role and label where the markup has them. The stage dropdown has none: CSS, scoped to the row.
 //
-// Try it: npx playwright test 2-challenge --repeat-each=3 --workers=3
+// Run it:  npx playwright test candidate-pipeline --repeat-each=3 --workers=3
 
 const CV = { name: 'cv.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF\n') };
 

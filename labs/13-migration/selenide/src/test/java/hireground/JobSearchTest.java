@@ -15,16 +15,18 @@ import static com.codeborne.selenide.WebDriverConditions.urlContaining;
 
 import org.junit.jupiter.api.Test;
 
-/** The warm-up: translated line by line in tests/1-warm-up.spec.ts. */
+/** A candidate searches for a job, opens it and sends the empty form. */
 class JobSearchTest extends BaseTest {
 
     @Test
     void searchOpensTheJobAndTheForm() {
         open("/jobs");
+        $(".job-card").shouldBe(visible); // the list has loaded
         $("#q").setValue("Reliability").pressEnter();
         $$(".job-card").shouldHave(size(1));
         $(".job-card h2").shouldHave(exactText("Site Reliability Engineer"));
-        $(".job-card .meta").shouldHave(text("München"), text("Remote possible"));
+        $(".job-card .meta").shouldHave(text("München"));
+        $(".job-card .meta").shouldHave(text("remote possible"));
 
         $(byText("Site Reliability Engineer")).click();
         webdriver().shouldHave(urlContaining("/jobs/site-reliability-engineer"));
