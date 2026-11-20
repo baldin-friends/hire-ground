@@ -1,13 +1,13 @@
-# The pipeline of e2e.yml with nine additions for a larger project. Read e2e.yml first.
+# The pipeline of e2e.yml with eleven additions for a larger project. Read e2e.yml first.
 # Every addition has a number. Every line without a number is the same as in e2e.yml.
 #
 # This workflow does not start by itself. Start it by hand: tab Actions, "e2e-extended", "Run workflow".
 # In a terminal:   gh workflow run e2e-extended.yml -f args='--grep @smoke'
-# The sheet lists the nine additions with a link each: labs/12-ci/README.md
+# The sheet lists the eleven additions with a link each: labs/12-ci/README.md
 name: e2e-extended
 
 on:
-  # 1 · A manual start, with two fields to fill in.
+  # 1 · A manual start, with four fields. The last two belong to the additions 10 and 11.
   workflow_dispatch:
     inputs:
       args:
@@ -16,6 +16,14 @@ on:
       base_url:
         description: 'Address of a deployed environment. Empty: the run starts its own application'
         default: ''
+      slow:
+        description: 'Also run the tests tagged @slow'
+        type: boolean
+        default: false
+      update_baselines:
+        description: 'Image comparison: write a new baseline instead of comparing'
+        type: boolean
+        default: false
   # 2 · A nightly run, Monday to Friday at 02:00 UTC. Remove the "#" of the next two lines to switch it on.
   #     GitHub reads a schedule only from the default branch.
   # schedule:
@@ -64,7 +72,8 @@ jobs:
       - name: Run shard ${{ matrix.shard }} of 3
         working-directory: solutions/12-ci
         # 7 · --fail-on-flaky-tests: a test that passes only on a retry fails the run.
-        run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob,github --fail-on-flaky-tests $ARGS
+        # 10 · --grep-invert @slow: this job leaves out the tests tagged @slow. The job "slow" runs them.
+        run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob,github --fail-on-flaky-tests --grep-invert @slow $ARGS
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
@@ -72,9 +81,73 @@ jobs:
           path: blob-report
           retention-days: 1
 
+  # 10 · The tests tagged @slow, in a job of their own. It runs at night, or when the field "slow" is ticked.
+  #      Its result goes into the same report as the other tests.
+  slow:
+    if: ${{ inputs.slow || github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix app
+      - name: Run the tests tagged @slow
+        working-directory: solutions/12-ci
+        run: npx playwright test --grep @slow --reporter=blob,github
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-slow.zip
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-slow
+          path: blob-report
+          retention-days: 1
+
+  # 11 · Image comparison (solutions/17-visual): the job page against the baseline image in the repository,
+  #      tests/__screenshots__/job-page-chromium-linux.png. A baseline is made where it is compared: in this image.
+  #      With the field "update_baselines" ticked, the job writes a new baseline and uploads it. You commit it.
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
+    env:
+      UPDATE: ${{ inputs.update_baselines && '--update-snapshots' || '' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix app
+      - name: Compare the job page with its baseline
+        working-directory: solutions/17-visual
+        run: PLAYWRIGHT_HTML_OUTPUT_DIR="$GITHUB_WORKSPACE/visual-report" npx playwright test 1-screenshots --reporter=html,github $UPDATE
+      # The report of this job: after a failure it shows the expected image, the actual one and the difference.
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: visual-report--attempt-${{ github.run_attempt }}
+          path: visual-report
+          retention-days: 14
+      # Only after an update: the new baseline, to download and commit.
+      - uses: actions/upload-artifact@v7
+        if: ${{ inputs.update_baselines }}
+        with:
+          name: baselines
+          path: solutions/17-visual/tests/__screenshots__/*-linux.png
+          retention-days: 14
+
   report:
     if: ${{ !cancelled() }}
-    needs: [tests]
+    needs: [tests, slow]                  # "slow" may be skipped: the report is written anyway
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

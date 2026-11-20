@@ -16,8 +16,9 @@ app/data/
 # editor folders
 .idea/
 
-# baselines of the visual example: made on your machine by its first command. In a real project they are committed.
-solutions/17-visual/tests/__screenshots__/
+# baselines of the visual example: yours stay on your machine. The one of the pipeline (…-linux.png) is in the repository.
+solutions/17-visual/tests/__screenshots__/*-darwin.png
+solutions/17-visual/tests/__screenshots__/*-win32.png
 
 # Case 9: the file your assistant writes. It stays on your machine.
 labs/13-migration/tests/*.assistant.spec.ts

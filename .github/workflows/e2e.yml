@@ -5,7 +5,9 @@
 #
 # Three machines run one shard each. A second job merges their results into one HTML report.
 # The sheet says more about every step and about sharding: labs/12-ci/README.md
-# The same pipeline with nine additions, to explore: e2e-extended.yml
+# Playwright in this file: the image, --shard, the two reporters, merge-reports. Everything else is GitHub Actions
+# and looks the same for any test tool.
+# The same pipeline with eleven additions, to explore: e2e-extended.yml
 # https://playwright.dev/docs/ci · https://playwright.dev/docs/test-sharding#github-actions-example
 name: e2e
 on:

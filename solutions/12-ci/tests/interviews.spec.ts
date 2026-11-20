@@ -5,7 +5,7 @@ import { test, expect } from '../../../support/fixtures';
 /** Tomorrow at hh:mm, in the format of <input type="datetime-local">. */
 const tomorrowAt = (hhmm: string) => `${new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)}T${hhmm}`;
 
-test('an invitation to an interview reaches the candidate', async ({ page, request, applicant, job }) => {
+test('an invitation to an interview reaches the candidate', { tag: '@slow' }, async ({ page, request, applicant, job }) => {
     await page.goto(`/recruiter/applications/${applicant.id}`);
     await page.getByLabel('Date and time').fill(tomorrowAt('10:00'));
     await page.getByRole('button', { name: 'Schedule interview' }).click();
