@@ -46,6 +46,18 @@ Every pipeline sets the variable `CI`. `playwright.config.ts` reads it:
 | `on:` | two triggers: a pull request, and a push to `main` |
 | `SELECTION` | the one expression of the file: a pull request runs `--grep @smoke`, a push to `main` runs everything |
 
+**What is Playwright in this file, and what is GitHub Actions**
+
+| Playwright | GitHub Actions: the same for any test tool |
+|---|---|
+| the image `mcr.microsoft.com/playwright`: the browsers and their libraries | `runs-on`, `container`, `timeout-minutes` |
+| `--shard=N/3`: the test runner splits the suite | `strategy: matrix`: three machines |
+| `--reporter=blob,github` and `merge-reports`: one report from three machines | `upload-artifact`, `download-artifact` |
+| `--grep @smoke`: tags | `on:`, and the expression for a pull request |
+| the config: retries, the trace and the application when `CI` is set | `checkout`, `setup-node`, `npm ci`, the variable `CI` |
+
+Without the image, the job needs one more step: `npx playwright install --with-deps`.
+
 **The job `tests`, step by step**
 
 | Step | What it does | Why |
@@ -152,7 +164,7 @@ into `env:` of `e2e.yml`, and the account for that environment comes from the re
 
 ## 7 · To explore: the extended workflow
 
-`.github/workflows/e2e-extended.yml` is the same pipeline with nine additions for a larger project. Each has a
+`.github/workflows/e2e-extended.yml` is the same pipeline with eleven additions for a larger project. Each has a
 number in the file. It runs only when somebody starts it: tab **Actions**, workflow **e2e-extended**,
 **Run workflow**, or `gh workflow run e2e-extended.yml -f args='--grep @smoke'`. In this repository you can read
 its runs; to start one, use a fork or your own repository.
@@ -168,6 +180,8 @@ its runs; to start one, use a fork or your own repository.
 | 7 | `--fail-on-flaky-tests` | a test that passes only on a retry fails the run | [docs/test-cli](https://playwright.dev/docs/test-cli#all-options) |
 | 8 | `--reporter html,junit` in the merge | the results as JUnit XML, for a dashboard or a test management tool | [docs/test-reporters](https://playwright.dev/docs/test-reporters#junit-reporter) |
 | 9 | a summary on the page of the run | the two commands that open the report of this run on a laptop | [job summaries](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary) |
+| 10 | the tests tagged `@slow` in a job of their own: `--grep @slow`. The other job leaves them out with `--grep-invert @slow` | tests that take long run at night or on request, not after every push. Here one test has the tag: the one that waits for a mail | [docs/test-annotations](https://playwright.dev/docs/test-annotations#tag-tests) |
+| 11 | image comparison: the job `visual` compares the job page with the baseline `solutions/17-visual/tests/__screenshots__/job-page-chromium-linux.png` | a change of the look fails the run, and the report shows the difference. Started with "update_baselines", the job writes a new baseline as an artifact, and you commit it | [docs/test-snapshots](https://playwright.dev/docs/test-snapshots) |
 
 ## Read more
 
